@@ -73,7 +73,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const userData: User = {
         id: authUser.id,
         email: authUser.email || '',
-        role: profileData.role as UserRole, // Fix: Cast role to UserRole type
+        role: profileData.role as UserRole, 
         name: profileData.name
       };
 
@@ -126,36 +126,54 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const { data, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
-        options: {
-          data: {
-            name,
-            role
-          }
-        }
       });
 
       if (signUpError) throw signUpError;
+      
+      if (!data.user?.id) {
+        throw new Error('User ID is undefined after signup');
+      }
+
+      console.log('User created successfully:', data.user);
 
       // Create profile in custom profiles table
       const { error: profileError } = await supabase
         .from('profiles')
         .insert({
-          id: data.user?.id,
+          id: data.user.id,
           name,
           role
         });
 
-      if (profileError) throw profileError;
+      if (profileError) {
+        console.error('Profile creation error:', profileError);
+        throw profileError;
+      }
 
+      console.log('Profile created successfully for role:', role);
       toast.success('Account created successfully');
       
-      // Redirect will be handled by auth state change listener
+      // Sign in the user after successful signup
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+      
+      if (signInError) throw signInError;
+      
+      // Fetch user profile to set up the session
       if (data.user) {
         await fetchUserProfile(data.user);
       }
     } catch (error: any) {
       console.error('Sign up error:', error);
-      toast.error(error.message || 'Failed to create account');
+      
+      // Provide more specific error messages
+      if (error.message?.includes('already registered')) {
+        toast.error('This email is already registered. Please sign in instead.');
+      } else {
+        toast.error(error.message || 'Failed to create account. Please try again.');
+      }
       throw error;
     } finally {
       setIsLoading(false);

@@ -15,7 +15,7 @@ const SignUp: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [role, setRole] = useState<'customer' | 'specialist'>('customer');
+  const [role, setRole] = useState<'customer' | 'specialist'>('specialist');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   
@@ -42,8 +42,10 @@ const SignUp: React.FC = () => {
     
     try {
       await signUp(email, password, role, name);
-    } catch (err) {
-      setError('Failed to create account. Please try again.');
+      console.log('Signup successful with role:', role);
+    } catch (err: any) {
+      console.error('Signup error:', err);
+      setError(err.message || 'Failed to create account. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
