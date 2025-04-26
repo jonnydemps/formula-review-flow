@@ -73,11 +73,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const userData: User = {
         id: authUser.id,
         email: authUser.email || '',
-        role: profileData.role,
+        role: profileData.role as UserRole, // Fix: Cast role to UserRole type
         name: profileData.name
       };
 
       setUser(userData);
+
+      // Redirect based on user role
+      if (userData.role === 'customer') {
+        navigate('/customer-dashboard');
+      } else if (userData.role === 'specialist') {
+        navigate('/specialist-dashboard');
+      }
     } catch (error) {
       console.error('Error fetching user profile:', error);
       toast.error('Failed to load user profile');
@@ -143,6 +150,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       toast.success('Account created successfully');
       
       // Redirect will be handled by auth state change listener
+      if (data.user) {
+        await fetchUserProfile(data.user);
+      }
     } catch (error: any) {
       console.error('Sign up error:', error);
       toast.error(error.message || 'Failed to create account');
