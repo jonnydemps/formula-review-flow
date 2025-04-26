@@ -69,7 +69,7 @@ export const getAllFormulas = async () => {
     .from('formulas')
     .select(`
       *,
-      profiles:customer_id (
+      profiles(
         name,
         id
       )
