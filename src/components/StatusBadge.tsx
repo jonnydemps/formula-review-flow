@@ -1,7 +1,7 @@
 
 import React from 'react';
 
-export type FormulStatus = 'pending' | 'quote' | 'paid' | 'rejected';
+export type FormulStatus = 'pending' | 'quote' | 'paid' | 'rejected' | 'completed';
 
 interface StatusBadgeProps {
   status: FormulStatus;
@@ -11,7 +11,8 @@ const statusLabels: Record<FormulStatus, string> = {
   pending: 'Pending Review',
   quote: 'Quote Ready',
   paid: 'Paid',
-  rejected: 'Rejected'
+  rejected: 'Rejected',
+  completed: 'Completed'
 };
 
 const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {
