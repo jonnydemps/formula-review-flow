@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -10,7 +9,7 @@ import {
   Menu,
   X,
   TestTube,
-  FileUpload
+  FileUp
 } from 'lucide-react';
 
 const Header: React.FC = () => {
@@ -95,7 +94,7 @@ const Header: React.FC = () => {
                   className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded-md"
                   onClick={closeMenu}
                 >
-                  <FileUpload className="h-4 w-4" />
+                  <FileUp className="h-4 w-4" />
                   Dashboard
                 </Link>
                 <div className="border-t my-2" />

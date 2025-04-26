@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -7,8 +6,8 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { 
   CheckCircle, 
-  FileUpload, 
-  Molecule,
+  FileUp, 
+  FlaskConical,
   TestTube, 
   FileCheck,
   ArrowRight 
@@ -56,7 +55,7 @@ const Home: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               <div className="text-center p-6 bg-white rounded-lg shadow-sm border border-gray-100 card-transition">
                 <div className="inline-flex items-center justify-center p-4 bg-blue-50 rounded-full mb-4">
-                  <FileUpload className="h-8 w-8 text-ra-blue" />
+                  <FileUp className="h-8 w-8 text-ra-blue" />
                 </div>
                 <h3 className="text-xl font-medium mb-2">1. Upload Formula</h3>
                 <p className="text-gray-500">
@@ -66,7 +65,7 @@ const Home: React.FC = () => {
               
               <div className="text-center p-6 bg-white rounded-lg shadow-sm border border-gray-100 card-transition" style={{ animationDelay: '0.2s' }}>
                 <div className="inline-flex items-center justify-center p-4 bg-blue-50 rounded-full mb-4">
-                  <Molecule className="h-8 w-8 text-ra-blue" />
+                  <FlaskConical className="h-8 w-8 text-ra-blue" />
                 </div>
                 <h3 className="text-xl font-medium mb-2">2. Expert Review</h3>
                 <p className="text-gray-500">

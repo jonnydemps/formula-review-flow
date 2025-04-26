@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -24,7 +23,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { FileUpload, Download, DollarSign } from 'lucide-react';
+import { FileUp, Download, DollarSign } from 'lucide-react';
 
 // Mock formula data type
 interface Formula {
@@ -166,7 +165,7 @@ const CustomerDashboard: React.FC = () => {
             ) : (
               <div className="mb-8">
                 <Button onClick={() => setShowUploader(true)}>
-                  <FileUpload className="mr-2 h-4 w-4" />
+                  <FileUp className="mr-2 h-4 w-4" />
                   Upload New Formula
                 </Button>
               </div>
