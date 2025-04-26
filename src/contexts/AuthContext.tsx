@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -50,7 +51,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => {
       subscription.unsubscribe();
     };
-  }, []);
+  }, [navigate]);
 
   const fetchUserProfile = async (authUser: any) => {
     try {
@@ -111,32 +112,46 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signUp = async (email: string, password: string, role: UserRole, name: string) => {
     setIsLoading(true);
     try {
+      // Step 1: Sign up the user with Supabase Auth
       const { data: authData, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          data: {
+            name,
+            role
+          }
+        }
       });
 
       if (signUpError) throw signUpError;
-
-      if (!authData.user?.id) {
-        throw new Error('User ID is undefined after signup');
+      
+      if (!authData.user) {
+        throw new Error('No user data returned after signup');
       }
 
-      const { error: profileError } = await supabase.auth.admin.createUser({
-        email,
-        password,
-        user_metadata: { name, role }
-      });
+      // Step 2: Create the user profile manually
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert([
+          {
+            id: authData.user.id,
+            name: name,
+            role: role
+          }
+        ]);
 
       if (profileError) {
         console.error('Profile creation error:', profileError);
+        // Attempt to clean up the auth user since profile creation failed
         await supabase.auth.signOut();
         throw profileError;
       }
 
-      console.log('Profile created successfully for role:', role);
       toast.success('Account created successfully');
+      console.log('Profile created successfully for role:', role);
       
+      // Automatically sign in the user after successful signup
       await signIn(email, password);
     } catch (error: any) {
       console.error('Sign up error:', error);
