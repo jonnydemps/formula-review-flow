@@ -1,10 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import FileUploader from '@/components/FileUploader';
-import StatusBadge, { FormulStatus } from '@/components/StatusBadge';
+import StatusBadge from '@/components/StatusBadge';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -24,23 +25,15 @@ import {
 } from '@/components/ui/table';
 import { toast } from 'sonner';
 import { FileUp, Download, DollarSign } from 'lucide-react';
-
-// Mock formula data type
-interface Formula {
-  id: string;
-  name: string;
-  uploadDate: string;
-  status: FormulStatus;
-  quote?: number;
-  reportUrl?: string;
-}
+import { Formula, getCustomerFormulas, uploadFormulaFile, createFormula, markFormulaPaid } from '@/services/formulaService';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 const CustomerDashboard: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [isUploading, setIsUploading] = useState(false);
-  const [formulas, setFormulas] = useState<Formula[]>([]);
   const [showUploader, setShowUploader] = useState(false);
+  const queryClient = useQueryClient();
 
   // Protect route - redirect if not authenticated or not a customer
   useEffect(() => {
@@ -51,61 +44,54 @@ const CustomerDashboard: React.FC = () => {
     }
   }, [user, navigate]);
 
-  // Mock initial formulas
-  useEffect(() => {
-    // Simulate loading data from API/database
-    const mockFormulas: Formula[] = [
-      {
-        id: '1',
-        name: 'Natural Face Cream.xlsx',
-        uploadDate: '2025-04-20',
-        status: 'pending'
-      },
-      {
-        id: '2',
-        name: 'Organic Shampoo Formula.xls',
-        uploadDate: '2025-04-19',
-        status: 'quote',
-        quote: 75
-      },
-      {
-        id: '3',
-        name: 'Anti-Aging Serum.xlsx',
-        uploadDate: '2025-04-15',
-        status: 'paid',
-        quote: 120,
-        reportUrl: '#report-3'
-      }
-    ];
-    
-    setFormulas(mockFormulas);
-  }, []);
+  // Fetch formulas for the customer
+  const { data: formulas = [], isLoading, error } = useQuery({
+    queryKey: ['formulas', user?.id],
+    queryFn: () => user ? getCustomerFormulas(user.id) : Promise.resolve([]),
+    enabled: !!user
+  });
 
-  const handleFileUpload = async (file: File) => {
-    setIsUploading(true);
-    
-    // Simulate file upload with delay
-    try {
-      // This would be an actual file upload to Supabase
-      await new Promise(resolve => setTimeout(resolve, 1500));
+  // File upload mutation
+  const uploadMutation = useMutation({
+    mutationFn: async ({ file, path }: { file: File, path: string }) => {
+      if (!user) throw new Error('User not authenticated');
       
-      // Add new formula to the list
-      const newFormula: Formula = {
-        id: `formula-${Date.now()}`,
-        name: file.name,
-        uploadDate: new Date().toISOString().split('T')[0],
-        status: 'pending'
-      };
+      // Upload file to storage
+      const filePath = await uploadFormulaFile(file, path);
       
-      setFormulas([newFormula, ...formulas]);
+      // Create formula record in database
+      return createFormula(user.id, filePath, file.name);
+    },
+    onSuccess: () => {
       setShowUploader(false);
       toast.success('Formula uploaded successfully');
-    } catch (error) {
+      queryClient.invalidateQueries({ queryKey: ['formulas', user?.id] });
+    },
+    onError: (error) => {
       console.error('Upload error:', error);
       toast.error('Failed to upload formula');
-    } finally {
+    },
+    onSettled: () => {
       setIsUploading(false);
     }
+  });
+
+  // Payment mutation
+  const paymentMutation = useMutation({
+    mutationFn: (formulaId: string) => markFormulaPaid(formulaId),
+    onSuccess: () => {
+      toast.success('Payment successful! Your report will be ready soon.');
+      queryClient.invalidateQueries({ queryKey: ['formulas', user?.id] });
+    },
+    onError: (error) => {
+      console.error('Payment error:', error);
+      toast.error('Failed to process payment');
+    }
+  });
+
+  const handleFileUpload = async (file: File, path: string) => {
+    setIsUploading(true);
+    uploadMutation.mutate({ file, path });
   };
 
   const handleAcceptQuote = (id: string, quote: number) => {
@@ -114,12 +100,7 @@ const CustomerDashboard: React.FC = () => {
     
     // Mock payment success after delay
     setTimeout(() => {
-      setFormulas(formulas.map(formula => 
-        formula.id === id 
-          ? {...formula, status: 'paid', reportUrl: '#report-' + id} 
-          : formula
-      ));
-      toast.success('Payment successful! Your report will be ready soon.');
+      paymentMutation.mutate(id);
     }, 2000);
   };
 
@@ -127,12 +108,29 @@ const CustomerDashboard: React.FC = () => {
     return null; // Don't render anything while checking authentication
   }
 
+  if (error) {
+    return (
+      <div className="flex flex-col min-h-screen">
+        <Header />
+        <main className="flex-grow bg-gray-50">
+          <div className="container mx-auto px-4 py-8">
+            <div className="text-center py-12">
+              <h2 className="text-2xl font-bold text-red-600">Error loading formulas</h2>
+              <p className="mt-2 text-gray-600">Please try refreshing the page</p>
+            </div>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col min-h-screen">
       <Header />
       
       <main className="flex-grow bg-gray-50">
-        <div className="ra-container">
+        <div className="container mx-auto px-4">
           <div className="py-8">
             <h1 className="text-3xl font-bold mb-2">Customer Dashboard</h1>
             <p className="text-gray-600 mb-6">
@@ -149,7 +147,10 @@ const CustomerDashboard: React.FC = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <FileUploader onFileSelected={handleFileUpload} />
+                  <FileUploader 
+                    onFileSelected={handleFileUpload} 
+                    isUploading={isUploading}
+                  />
                 </CardContent>
                 <CardFooter className="flex justify-end">
                   <Button 
@@ -180,7 +181,11 @@ const CustomerDashboard: React.FC = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {formulas.length > 0 ? (
+                {isLoading ? (
+                  <div className="text-center py-8">
+                    <p className="text-gray-500">Loading your formulas...</p>
+                  </div>
+                ) : formulas.length > 0 ? (
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -209,9 +214,21 @@ const CustomerDashboard: React.FC = () => {
                               </Button>
                             )}
                             
-                            {formula.status === 'paid' && formula.reportUrl && (
+                            {formula.status === 'paid' && (
+                              <Button variant="outline" size="sm">
+                                Report in Progress
+                              </Button>
+                            )}
+
+                            {formula.status === 'completed' && (
                               <Button variant="outline" size="sm" asChild>
-                                <a href={formula.reportUrl} target="_blank" rel="noopener noreferrer">
+                                <a 
+                                  href="#" 
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    toast.success('Downloading report...');
+                                  }}
+                                >
                                   <Download className="mr-1 h-4 w-4" />
                                   Download Report
                                 </a>

@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import StatusBadge, { FormulStatus } from '@/components/StatusBadge';
+import StatusBadge from '@/components/StatusBadge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -15,7 +15,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import {
   Card,
@@ -42,39 +41,20 @@ import {
   Search,
   Clipboard
 } from 'lucide-react';
-
-// Mock formula data type with additional fields for the specialist
-interface Formula {
-  id: string;
-  name: string;
-  uploadDate: string;
-  status: FormulStatus;
-  customerName: string;
-  customerEmail: string;
-  quote?: number;
-  reviewNotes?: string;
-  ingredients?: Ingredient[];
-  reportUrl?: string;
-}
-
-interface Ingredient {
-  id: string;
-  name: string;
-  percentage?: string;
-  compliant: boolean;
-  notes?: string;
-}
+import { getAllFormulas, updateFormulaQuote } from '@/services/formulaService';
+import { Ingredient, ReviewData, saveReview, getReviewForFormula, generateReport } from '@/services/reviewService';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 const SpecialistDashboard: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [formulas, setFormulas] = useState<Formula[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedFormula, setSelectedFormula] = useState<Formula | null>(null);
+  const [selectedFormula, setSelectedFormula] = useState<any | null>(null);
   const [quoteAmount, setQuoteAmount] = useState('');
   const [showReviewDialog, setShowReviewDialog] = useState(false);
   const [reviewNotes, setReviewNotes] = useState('');
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
+  const queryClient = useQueryClient();
   
   // Protect route - redirect if not authenticated or not a specialist
   useEffect(() => {
@@ -85,84 +65,96 @@ const SpecialistDashboard: React.FC = () => {
     }
   }, [user, navigate]);
 
-  // Mock initial formulas
-  useEffect(() => {
-    // Simulate loading data from API/database
-    const mockFormulas: Formula[] = [
-      {
-        id: '1',
-        name: 'Natural Face Cream.xlsx',
-        uploadDate: '2025-04-20',
-        status: 'pending',
-        customerName: 'Sarah Johnson',
-        customerEmail: 'sarah@example.com',
-        ingredients: [
-          { id: 'ing-1', name: 'Water', percentage: '70%', compliant: true },
-          { id: 'ing-2', name: 'Glycerin', percentage: '5%', compliant: true },
-          { id: 'ing-3', name: 'Sodium Lauryl Sulfate', percentage: '2%', compliant: false, notes: 'Exceeds maximum concentration' },
-          { id: 'ing-4', name: 'Fragrance', percentage: '0.5%', compliant: true },
-        ]
-      },
-      {
-        id: '2',
-        name: 'Organic Shampoo Formula.xls',
-        uploadDate: '2025-04-19',
-        status: 'quote',
-        customerName: 'Mike Brown',
-        customerEmail: 'mike@example.com',
-        quote: 75,
-        ingredients: [
-          { id: 'ing-5', name: 'Aloe Vera Extract', percentage: '10%', compliant: true },
-          { id: 'ing-6', name: 'Coconut Oil', percentage: '3%', compliant: true },
-          { id: 'ing-7', name: 'Vitamin E', percentage: '0.5%', compliant: true },
-        ],
-        reviewNotes: 'Formula appears compliant with some minor suggestions.'
-      },
-      {
-        id: '3',
-        name: 'Anti-Aging Serum.xlsx',
-        uploadDate: '2025-04-15',
-        status: 'paid',
-        customerName: 'Emily Davis',
-        customerEmail: 'emily@example.com',
-        quote: 120,
-        reviewNotes: 'Complete compliance check performed. Two ingredients require modifications.',
-        reportUrl: '#report-3',
-        ingredients: [
-          { id: 'ing-8', name: 'Hyaluronic Acid', percentage: '1%', compliant: true },
-          { id: 'ing-9', name: 'Retinol', percentage: '0.3%', compliant: true },
-          { id: 'ing-10', name: 'Vitamin C', percentage: '5%', compliant: true },
-        ]
-      }
-    ];
-    
-    setFormulas(mockFormulas);
-  }, []);
+  // Fetch all formulas
+  const { data: formulas = [], isLoading, error } = useQuery({
+    queryKey: ['all-formulas'],
+    queryFn: getAllFormulas,
+    enabled: !!user && user.role === 'specialist'
+  });
 
-  const handleReviewFormula = (formula: Formula) => {
+  // Quote mutation
+  const quoteMutation = useMutation({
+    mutationFn: ({ formulaId, amount }: { formulaId: string, amount: number }) => 
+      updateFormulaQuote(formulaId, amount),
+    onSuccess: () => {
+      toast.success(`Quote sent successfully`);
+      setQuoteAmount('');
+      setSelectedFormula(null);
+      queryClient.invalidateQueries({ queryKey: ['all-formulas'] });
+    },
+    onError: (error) => {
+      console.error('Quote error:', error);
+      toast.error('Failed to send quote');
+    }
+  });
+
+  // Review mutations
+  const reviewMutation = useMutation({
+    mutationFn: ({ formulaId, specialistId, reviewData }: { 
+      formulaId: string, 
+      specialistId: string, 
+      reviewData: ReviewData 
+    }) => saveReview(formulaId, specialistId, reviewData),
+    onSuccess: () => {
+      toast.success('Review saved successfully');
+      setShowReviewDialog(false);
+      queryClient.invalidateQueries({ queryKey: ['all-formulas'] });
+    },
+    onError: (error) => {
+      console.error('Review error:', error);
+      toast.error('Failed to save review');
+    }
+  });
+
+  // Report mutation
+  const reportMutation = useMutation({
+    mutationFn: ({ formulaId, specialistId }: { formulaId: string, specialistId: string }) => 
+      generateReport(formulaId, specialistId),
+    onSuccess: () => {
+      toast.success('Report generated and available for customer');
+      queryClient.invalidateQueries({ queryKey: ['all-formulas'] });
+    },
+    onError: (error) => {
+      console.error('Report error:', error);
+      toast.error('Failed to generate report');
+    }
+  });
+
+  const handleReviewFormula = async (formula: any) => {
     setSelectedFormula(formula);
-    setReviewNotes(formula.reviewNotes || '');
-    setIngredients(formula.ingredients || []);
-    setShowReviewDialog(true);
+    
+    try {
+      // Try to fetch existing review data
+      const review = await getReviewForFormula(formula.id);
+      
+      if (review && review.review_data) {
+        setReviewNotes(review.review_data.reviewNotes || '');
+        setIngredients(review.review_data.ingredients || []);
+      } else {
+        // Initialize with empty data
+        setReviewNotes('');
+        setIngredients([
+          { id: `ing-${Date.now()}`, name: '', percentage: '', compliant: true }
+        ]);
+      }
+      
+      setShowReviewDialog(true);
+    } catch (error) {
+      console.error('Error fetching review:', error);
+      toast.error('Failed to load review data');
+    }
   };
 
-  const handleSendQuote = (formula: Formula) => {
+  const handleSendQuote = (formula: any) => {
     if (!quoteAmount || isNaN(Number(quoteAmount))) {
       toast.error('Please enter a valid quote amount');
       return;
     }
     
-    // Update formula with quote
-    const updatedFormulas = formulas.map(f => 
-      f.id === formula.id 
-        ? { ...f, quote: Number(quoteAmount), status: 'quote' as FormulStatus } 
-        : f
-    );
-    
-    setFormulas(updatedFormulas);
-    toast.success(`Quote of $${quoteAmount} sent to ${formula.customerName}`);
-    setQuoteAmount('');
-    setSelectedFormula(null);
+    quoteMutation.mutate({ 
+      formulaId: formula.id, 
+      amount: Number(quoteAmount) 
+    });
   };
 
   const handleUpdateIngredient = (id: string, field: keyof Ingredient, value: string | boolean) => {
@@ -172,48 +164,36 @@ const SpecialistDashboard: React.FC = () => {
   };
 
   const handleSaveReview = () => {
-    if (selectedFormula) {
-      const updatedFormulas = formulas.map(f => 
-        f.id === selectedFormula.id 
-          ? { 
-              ...f, 
-              reviewNotes, 
-              ingredients,
-            } 
-          : f
-      );
-      
-      setFormulas(updatedFormulas);
-      toast.success('Review saved successfully');
-      setShowReviewDialog(false);
-    }
-  };
-
-  const handleGenerateReport = (formula: Formula) => {
-    // In a real app, this would generate a PDF and store it
-    toast.success('Generating report...');
+    if (!user || !selectedFormula) return;
     
-    // Mock report generation
-    setTimeout(() => {
-      const updatedFormulas = formulas.map(f => 
-        f.id === formula.id 
-          ? { 
-              ...f, 
-              reportUrl: `#report-${formula.id}` 
-            } 
-          : f
-      );
-      
-      setFormulas(updatedFormulas);
-      toast.success('Report generated and available for customer');
-    }, 2000);
+    const reviewData: ReviewData = {
+      reviewNotes,
+      ingredients
+    };
+    
+    reviewMutation.mutate({
+      formulaId: selectedFormula.id,
+      specialistId: user.id,
+      reviewData
+    });
   };
 
-  const filteredFormulas = formulas.filter(formula => {
+  const handleGenerateReport = (formula: any) => {
+    if (!user) return;
+    
+    reportMutation.mutate({
+      formulaId: formula.id,
+      specialistId: user.id
+    });
+  };
+
+  // Filter formulas based on search term
+  const filteredFormulas = formulas.filter((formula: any) => {
+    const searchLower = searchTerm.toLowerCase();
     return (
-      formula.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      formula.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      formula.customerEmail.toLowerCase().includes(searchTerm.toLowerCase())
+      formula.name.toLowerCase().includes(searchLower) ||
+      formula.customerName?.toLowerCase().includes(searchLower) ||
+      formula.customerId?.toLowerCase().includes(searchLower)
     );
   });
 
@@ -226,7 +206,7 @@ const SpecialistDashboard: React.FC = () => {
       <Header />
       
       <main className="flex-grow bg-gray-50">
-        <div className="ra-container">
+        <div className="container mx-auto px-4">
           <div className="py-8">
             <div className="flex justify-between items-center mb-6">
               <div>
@@ -257,7 +237,15 @@ const SpecialistDashboard: React.FC = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {filteredFormulas.length > 0 ? (
+                {isLoading ? (
+                  <div className="text-center py-8">
+                    <p className="text-gray-500">Loading formulas...</p>
+                  </div>
+                ) : error ? (
+                  <div className="text-center py-8 text-red-500">
+                    <p>Error loading formulas. Please try again.</p>
+                  </div>
+                ) : filteredFormulas.length > 0 ? (
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -269,14 +257,14 @@ const SpecialistDashboard: React.FC = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredFormulas.map((formula) => (
+                      {filteredFormulas.map((formula: any) => (
                         <TableRow key={formula.id}>
                           <TableCell>{formula.name}</TableCell>
                           <TableCell>{formula.uploadDate}</TableCell>
                           <TableCell>
                             <div>
-                              <div>{formula.customerName}</div>
-                              <div className="text-xs text-gray-500">{formula.customerEmail}</div>
+                              <div>{formula.customerName || 'Unknown'}</div>
+                              <div className="text-xs text-gray-500">{formula.customerEmail || formula.customerId}</div>
                             </div>
                           </TableCell>
                           <TableCell>
@@ -285,7 +273,10 @@ const SpecialistDashboard: React.FC = () => {
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-2">
                               <Button variant="outline" size="sm" asChild>
-                                <a href="#download" onClick={(e) => e.preventDefault()}>
+                                <a href="#download" onClick={(e) => {
+                                  e.preventDefault();
+                                  toast.info('Downloading formula...');
+                                }}>
                                   <FileDown className="h-4 w-4" />
                                 </a>
                               </Button>
@@ -300,17 +291,11 @@ const SpecialistDashboard: React.FC = () => {
                               
                               {formula.status === 'pending' && (
                                 <Dialog>
-                                  <DialogTrigger asChild>
-                                    <Button size="sm">
-                                      <DollarSign className="mr-1 h-4 w-4" />
-                                      Quote
-                                    </Button>
-                                  </DialogTrigger>
                                   <DialogContent>
                                     <DialogHeader>
                                       <DialogTitle>Create Quote</DialogTitle>
                                       <DialogDescription>
-                                        Send a price quote to {formula.customerName}
+                                        Send a price quote to {formula.customerName || 'customer'}
                                       </DialogDescription>
                                     </DialogHeader>
                                     <div className="py-4">
@@ -348,10 +333,18 @@ const SpecialistDashboard: React.FC = () => {
                                       </Button>
                                     </DialogFooter>
                                   </DialogContent>
+
+                                  <Button size="sm" onClick={() => {
+                                    setSelectedFormula(formula);
+                                    setQuoteAmount('');
+                                  }}>
+                                    <DollarSign className="mr-1 h-4 w-4" />
+                                    Quote
+                                  </Button>
                                 </Dialog>
                               )}
                               
-                              {formula.status === 'paid' && !formula.reportUrl && (
+                              {formula.status === 'paid' && (
                                 <Button 
                                   size="sm"
                                   onClick={() => handleGenerateReport(formula)}
@@ -361,9 +354,12 @@ const SpecialistDashboard: React.FC = () => {
                                 </Button>
                               )}
                               
-                              {formula.reportUrl && (
+                              {formula.status === 'completed' && (
                                 <Button variant="outline" size="sm" asChild>
-                                  <a href={formula.reportUrl} target="_blank" rel="noopener noreferrer">
+                                  <a href="#" onClick={(e) => {
+                                    e.preventDefault();
+                                    toast.info('Downloading report...');
+                                  }}>
                                     <Download className="mr-1 h-4 w-4" />
                                     Report
                                   </a>
@@ -421,7 +417,13 @@ const SpecialistDashboard: React.FC = () => {
                 <TableBody>
                   {ingredients.map((ingredient) => (
                     <TableRow key={ingredient.id}>
-                      <TableCell>{ingredient.name}</TableCell>
+                      <TableCell>
+                        <Input 
+                          type="text" 
+                          value={ingredient.name || ''} 
+                          onChange={(e) => handleUpdateIngredient(ingredient.id, 'name', e.target.value)}
+                        />
+                      </TableCell>
                       <TableCell>
                         <Input 
                           type="text" 

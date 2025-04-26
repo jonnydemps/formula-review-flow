@@ -3,15 +3,20 @@ import React, { useState, useRef } from 'react';
 import { Upload, File, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { v4 as uuidv4 } from 'uuid';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface FileUploaderProps {
-  onFileSelected: (file: File) => void;
+  onFileSelected: (file: File, path: string) => void;
+  isUploading: boolean;
 }
 
-const FileUploader: React.FC<FileUploaderProps> = ({ onFileSelected }) => {
+const FileUploader: React.FC<FileUploaderProps> = ({ onFileSelected, isUploading }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { user } = useAuth();
 
   // Handle drag events
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
@@ -52,7 +57,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({ onFileSelected }) => {
   };
 
   // Validate file before setting
-  const validateAndSetFile = (file: File) => {
+  const validateAndSetFile = async (file: File) => {
     const validExcelTypes = [
       'application/vnd.ms-excel',
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -64,8 +69,14 @@ const FileUploader: React.FC<FileUploaderProps> = ({ onFileSelected }) => {
     
     if (validExcelTypes.includes(file.type) || ['xls', 'xlsx'].includes(fileExtension || '')) {
       setSelectedFile(file);
-      onFileSelected(file);
-      toast.success(`File "${file.name}" selected successfully`);
+      
+      if (user) {
+        // Generate unique path for the file in storage
+        const filePath = `${user.id}/${uuidv4()}-${file.name}`;
+        onFileSelected(file, filePath);
+      } else {
+        toast.error('You must be logged in to upload files');
+      }
     } else {
       toast.error('Please upload a valid Excel file (.xls, .xlsx)');
     }
@@ -88,12 +99,13 @@ const FileUploader: React.FC<FileUploaderProps> = ({ onFileSelected }) => {
         onChange={handleFileChange}
         accept=".xls,.xlsx"
         className="hidden"
+        disabled={isUploading}
       />
       
       {/* File upload area */}
       {!selectedFile ? (
         <div
-          className={`file-upload-area cursor-pointer ${isDragging ? 'active' : ''}`}
+          className={`border-2 border-dashed rounded-lg p-6 ${isDragging ? 'border-primary bg-primary/5' : 'border-gray-300'} transition-colors cursor-pointer`}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
@@ -121,14 +133,16 @@ const FileUploader: React.FC<FileUploaderProps> = ({ onFileSelected }) => {
               </p>
             </div>
           </div>
-          <Button 
-            variant="ghost" 
-            size="icon"
-            onClick={(e) => { e.stopPropagation(); removeFile(); }}
-            className="hover:bg-gray-100 rounded-full"
-          >
-            <X className="h-4 w-4" />
-          </Button>
+          {!isUploading && (
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={(e) => { e.stopPropagation(); removeFile(); }}
+              className="hover:bg-gray-100 rounded-full"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          )}
         </div>
       )}
     </div>
