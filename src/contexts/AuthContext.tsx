@@ -1,10 +1,8 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 
-// Types for our authentication context
 export type UserRole = 'customer' | 'specialist';
 
 export interface User {
@@ -22,7 +20,6 @@ interface AuthContextType {
   signOut: () => void;
 }
 
-// Create the context
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -31,7 +28,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Set up auth state change listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session?.user) {
         await fetchUserProfile(session.user);
@@ -41,7 +37,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     });
 
-    // Check for existing session on mount
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
@@ -52,7 +47,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     checkSession();
 
-    // Cleanup subscription
     return () => {
       subscription.unsubscribe();
     };
@@ -60,7 +54,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const fetchUserProfile = async (authUser: any) => {
     try {
-      // Fetch profile from custom profiles table
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('*')
@@ -69,17 +62,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (profileError) throw profileError;
 
-      // Create user object with profile information
       const userData: User = {
         id: authUser.id,
         email: authUser.email || '',
-        role: profileData.role as UserRole, 
+        role: profileData.role as UserRole,
         name: profileData.name
       };
 
       setUser(userData);
 
-      // Redirect based on user role
       if (userData.role === 'customer') {
         navigate('/customer-dashboard');
       } else if (userData.role === 'specialist') {
@@ -88,7 +79,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error) {
       console.error('Error fetching user profile:', error);
       toast.error('Failed to load user profile');
-      // Optional: Sign out if profile fetch fails
       await supabase.auth.signOut();
       setUser(null);
     }
@@ -106,7 +96,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       toast.success('Successfully signed in');
       
-      // Redirect based on role (this will be handled by fetchUserProfile)
       if (data.user) {
         await fetchUserProfile(data.user);
       }
@@ -122,57 +111,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signUp = async (email: string, password: string, role: UserRole, name: string) => {
     setIsLoading(true);
     try {
-      // Sign up user in Supabase auth
-      const { data, error: signUpError } = await supabase.auth.signUp({
+      const { data: authData, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
       });
 
       if (signUpError) throw signUpError;
-      
-      if (!data.user?.id) {
+
+      if (!authData.user?.id) {
         throw new Error('User ID is undefined after signup');
       }
 
-      console.log('User created successfully:', data.user);
-
-      // Create profile in custom profiles table
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert({
-          id: data.user.id,
-          name,
-          role
-        });
+      const { error: profileError } = await supabase.auth.admin.createUser({
+        email,
+        password,
+        user_metadata: { name, role }
+      });
 
       if (profileError) {
         console.error('Profile creation error:', profileError);
+        await supabase.auth.signOut();
         throw profileError;
       }
 
       console.log('Profile created successfully for role:', role);
       toast.success('Account created successfully');
       
-      // Sign in the user after successful signup
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
-      
-      if (signInError) throw signInError;
-      
-      // Fetch user profile to set up the session
-      if (data.user) {
-        await fetchUserProfile(data.user);
-      }
+      await signIn(email, password);
     } catch (error: any) {
       console.error('Sign up error:', error);
       
-      // Provide more specific error messages
       if (error.message?.includes('already registered')) {
         toast.error('This email is already registered. Please sign in instead.');
       } else {
-        toast.error(error.message || 'Failed to create account. Please try again.');
+        toast.error('Failed to create account. Please try again.');
       }
       throw error;
     } finally {
@@ -198,7 +170,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   );
 };
 
-// Custom hook to use the auth context
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
