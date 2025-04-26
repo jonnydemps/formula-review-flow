@@ -65,14 +65,12 @@ export const getCustomerFormulas = async (customerId: string) => {
 
 // Get all formulas for specialists
 export const getAllFormulas = async () => {
+  // Fix the join syntax and properly handle the profile data
   const { data, error } = await supabase
     .from('formulas')
     .select(`
       *,
-      profiles(
-        name,
-        id
-      )
+      profiles:profiles(name, id)
     `)
     .order('created_at', { ascending: false });
 
@@ -86,7 +84,7 @@ export const getAllFormulas = async () => {
     status: mapStatusToUI(formula.status),
     filePath: formula.file_path,
     quote: formula.quote_amount,
-    customerName: formula.profiles?.name || 'Unknown Customer',
+    customerName: formula.profiles?.[0]?.name || 'Unknown Customer',
     customerEmail: '', // Would need to join with auth.users which isn't directly possible
     customerId: formula.customer_id,
   }));
