@@ -9,7 +9,101 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      formulas: {
+        Row: {
+          created_at: string | null
+          customer_id: string | null
+          file_path: string
+          id: string
+          original_filename: string
+          quote_amount: number | null
+          status: Database["public"]["Enums"]["formula_status"] | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          customer_id?: string | null
+          file_path: string
+          id?: string
+          original_filename: string
+          quote_amount?: number | null
+          status?: Database["public"]["Enums"]["formula_status"] | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          customer_id?: string | null
+          file_path?: string
+          id?: string
+          original_filename?: string
+          quote_amount?: number | null
+          status?: Database["public"]["Enums"]["formula_status"] | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string | null
+          role: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id: string
+          name?: string | null
+          role: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string | null
+          role?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      reviews: {
+        Row: {
+          created_at: string | null
+          formula_id: string | null
+          id: string
+          report_url: string | null
+          review_data: Json | null
+          specialist_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          formula_id?: string | null
+          id?: string
+          report_url?: string | null
+          review_data?: Json | null
+          specialist_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          formula_id?: string | null
+          id?: string
+          report_url?: string | null
+          review_data?: Json | null
+          specialist_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_formula_id_fkey"
+            columns: ["formula_id"]
+            isOneToOne: false
+            referencedRelation: "formulas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -18,7 +112,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      formula_status: "pending_review" | "quote_provided" | "paid" | "completed"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -133,6 +227,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      formula_status: ["pending_review", "quote_provided", "paid", "completed"],
+    },
   },
 } as const

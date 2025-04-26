@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 // Types for our authentication context
 export type UserRole = 'customer' | 'specialist';
@@ -24,109 +25,142 @@ interface AuthContextType {
 // Create the context
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Mock authentication for now - would be replaced with Supabase auth
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
-  // Check for existing session on mount
   useEffect(() => {
-    const storedUser = localStorage.getItem('simplyra_user');
-    if (storedUser) {
-      try {
-        setUser(JSON.parse(storedUser));
-      } catch (error) {
-        console.error('Failed to parse stored user', error);
-        localStorage.removeItem('simplyra_user');
+    // Set up auth state change listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
+        await fetchUserProfile(session.user);
+      } else if (event === 'SIGNED_OUT') {
+        setUser(null);
+        navigate('/');
       }
-    }
-    setIsLoading(false);
+    });
+
+    // Check for existing session on mount
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        await fetchUserProfile(session.user);
+      }
+      setIsLoading(false);
+    };
+
+    checkSession();
+
+    // Cleanup subscription
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
-  // Mock sign in function - replace with Supabase auth
+  const fetchUserProfile = async (authUser: any) => {
+    try {
+      // Fetch profile from custom profiles table
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', authUser.id)
+        .single();
+
+      if (profileError) throw profileError;
+
+      // Create user object with profile information
+      const userData: User = {
+        id: authUser.id,
+        email: authUser.email || '',
+        role: profileData.role,
+        name: profileData.name
+      };
+
+      setUser(userData);
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+      toast.error('Failed to load user profile');
+      // Optional: Sign out if profile fetch fails
+      await supabase.auth.signOut();
+      setUser(null);
+    }
+  };
+
   const signIn = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      // Mock authentication - this would use Supabase auth.signIn
-      if (password.length < 6) {
-        throw new Error('Invalid credentials');
-      }
-
-      // For demonstration, create a mock user based on email
-      const mockUser: User = {
-        id: `user-${Date.now()}`,
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
-        // Determine role based on email (for demo purposes)
-        role: email.includes('specialist') ? 'specialist' : 'customer',
-        name: email.split('@')[0]
-      };
+        password
+      });
 
-      // Store in local storage for persistence (temporary solution)
-      localStorage.setItem('simplyra_user', JSON.stringify(mockUser));
-      setUser(mockUser);
-      
+      if (error) throw error;
+
       toast.success('Successfully signed in');
       
-      // Redirect based on role
-      if (mockUser.role === 'specialist') {
-        navigate('/specialist-dashboard');
-      } else {
-        navigate('/customer-dashboard');
+      // Redirect based on role (this will be handled by fetchUserProfile)
+      if (data.user) {
+        await fetchUserProfile(data.user);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Sign in error:', error);
-      toast.error('Failed to sign in');
+      toast.error(error.message || 'Failed to sign in');
       throw error;
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Mock sign up function - replace with Supabase auth
   const signUp = async (email: string, password: string, role: UserRole, name: string) => {
     setIsLoading(true);
     try {
-      // Mock sign up - this would use Supabase auth.signUp
-      if (password.length < 6) {
-        throw new Error('Password must be at least 6 characters');
-      }
-
-      // Create mock user
-      const mockUser: User = {
-        id: `user-${Date.now()}`,
+      // Sign up user in Supabase auth
+      const { data, error: signUpError } = await supabase.auth.signUp({
         email,
-        role,
-        name
-      };
+        password,
+        options: {
+          data: {
+            name,
+            role
+          }
+        }
+      });
 
-      // Store user in local storage
-      localStorage.setItem('simplyra_user', JSON.stringify(mockUser));
-      setUser(mockUser);
-      
+      if (signUpError) throw signUpError;
+
+      // Create profile in custom profiles table
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert({
+          id: data.user?.id,
+          name,
+          role
+        });
+
+      if (profileError) throw profileError;
+
       toast.success('Account created successfully');
       
-      // Redirect based on role
-      if (role === 'specialist') {
-        navigate('/specialist-dashboard');
-      } else {
-        navigate('/customer-dashboard');
-      }
-    } catch (error) {
+      // Redirect will be handled by auth state change listener
+    } catch (error: any) {
       console.error('Sign up error:', error);
-      toast.error('Failed to create account');
+      toast.error(error.message || 'Failed to create account');
       throw error;
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Sign out function
-  const signOut = () => {
-    localStorage.removeItem('simplyra_user');
-    setUser(null);
-    navigate('/');
-    toast.success('Signed out successfully');
+  const signOut = async () => {
+    try {
+      await supabase.auth.signOut();
+      toast.success('Signed out successfully');
+      navigate('/');
+    } catch (error) {
+      console.error('Sign out error:', error);
+      toast.error('Failed to sign out');
+    }
   };
 
   return (
