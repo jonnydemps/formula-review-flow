@@ -1,6 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { FormulStatus } from '@/components/StatusBadge';
+
+export type FormulStatus = 'pending' | 'quote' | 'paid' | 'completed';
 
 export interface Formula {
   id: string;
@@ -128,7 +129,7 @@ const mapStatusToUI = (dbStatus: string | null): FormulStatus => {
     case 'pending_review': return 'pending';
     case 'quote_provided': return 'quote';
     case 'paid': return 'paid';
-    case 'completed': return 'completed';
+    case 'completed': return 'completed' as FormulStatus;
     default: return 'pending';
   }
 };

@@ -1,5 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import { Json } from '@/integrations/supabase/types';
 
 export interface Ingredient {
   id: string;
@@ -21,7 +22,7 @@ export const saveReview = async (formulaId: string, specialistId: string, review
     .upsert({
       formula_id: formulaId,
       specialist_id: specialistId,
-      review_data: reviewData
+      review_data: reviewData as unknown as Json
     })
     .select()
     .single();

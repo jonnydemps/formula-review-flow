@@ -128,8 +128,9 @@ const SpecialistDashboard: React.FC = () => {
       const review = await getReviewForFormula(formula.id);
       
       if (review && review.review_data) {
-        setReviewNotes(review.review_data.reviewNotes || '');
-        setIngredients(review.review_data.ingredients || []);
+        const reviewData = review.review_data as any;
+        setReviewNotes(reviewData.reviewNotes || '');
+        setIngredients(reviewData.ingredients || []);
       } else {
         // Initialize with empty data
         setReviewNotes('');
