@@ -70,24 +70,29 @@ export const getAllFormulas = async () => {
     .from('formulas')
     .select(`
       *,
-      profiles:profiles(name, id)
+      profiles(name, id)
     `)
     .order('created_at', { ascending: false });
 
   if (error) throw error;
 
-  return data.map(formula => ({
-    id: formula.id,
-    name: formula.original_filename,
-    originalFilename: formula.original_filename,
-    uploadDate: new Date(formula.created_at).toISOString().split('T')[0],
-    status: mapStatusToUI(formula.status),
-    filePath: formula.file_path,
-    quote: formula.quote_amount,
-    customerName: formula.profiles?.[0]?.name || 'Unknown Customer',
-    customerEmail: '', // Would need to join with auth.users which isn't directly possible
-    customerId: formula.customer_id,
-  }));
+  return data.map(formula => {
+    // Properly handle the profiles data which is returned as an array
+    const profileData = formula.profiles as unknown as Array<{ name: string, id: string }> | null;
+    
+    return {
+      id: formula.id,
+      name: formula.original_filename,
+      originalFilename: formula.original_filename,
+      uploadDate: new Date(formula.created_at).toISOString().split('T')[0],
+      status: mapStatusToUI(formula.status),
+      filePath: formula.file_path,
+      quote: formula.quote_amount,
+      customerName: profileData && profileData.length > 0 ? profileData[0].name : 'Unknown Customer',
+      customerEmail: '', // Would need to join with auth.users which isn't directly possible
+      customerId: formula.customer_id,
+    };
+  });
 };
 
 // Update formula status and quote
