@@ -6,9 +6,6 @@ export const navigateBasedOnRole = (navigate: (path: string) => void, userData: 
     case 'admin':
       navigate('/admin-dashboard');
       break;
-    case 'specialist':
-      navigate('/specialist-dashboard');
-      break;
     case 'customer':
       navigate('/customer-dashboard');
       break;

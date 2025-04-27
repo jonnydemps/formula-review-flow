@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -23,33 +22,17 @@ const Header: React.FC = () => {
 
   const getDashboardLink = () => {
     if (!user) return '/';
-    
-    switch (user.role) {
-      case 'admin': return '/admin-dashboard';
-      case 'specialist': return '/specialist-dashboard';
-      case 'customer': return '/customer-dashboard';
-      default: return '/';
-    }
+    return user.role === 'admin' ? '/admin-dashboard' : '/customer-dashboard';
   };
 
   const getDashboardLabel = () => {
     if (!user) return 'Dashboard';
-    
-    switch (user.role) {
-      case 'admin': return 'Admin Dashboard';
-      case 'specialist': return 'Specialist Dashboard';
-      case 'customer': return 'Customer Dashboard';
-      default: return 'Dashboard';
-    }
+    return user.role === 'admin' ? 'Admin Dashboard' : 'Customer Dashboard';
   };
 
   const getDashboardIcon = () => {
     if (!user) return <FileUp className="h-4 w-4" />;
-    
-    switch (user.role) {
-      case 'admin': return <Shield className="h-4 w-4" />;
-      default: return <FileUp className="h-4 w-4" />;
-    }
+    return user.role === 'admin' ? <Shield className="h-4 w-4" /> : <FileUp className="h-4 w-4" />;
   };
 
   return (
