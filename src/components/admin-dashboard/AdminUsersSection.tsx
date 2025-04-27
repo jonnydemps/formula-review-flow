@@ -2,9 +2,10 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { UserCheck } from 'lucide-react';
+import { UserCheck, RefreshCcw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
 
 interface Profile {
   id: string;
@@ -21,29 +22,34 @@ const AdminUsersSection: React.FC<AdminUsersSectionProps> = ({ onBack }) => {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchProfiles = async () => {
-      try {
-        setLoading(true);
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .order('created_at', { ascending: false });
+  const fetchProfiles = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-        if (error) {
-          throw error;
-        }
-
-        setProfiles(data || []);
-      } catch (error: any) {
-        toast.error(`Failed to load user profiles: ${error.message}`);
-      } finally {
-        setLoading(false);
+      if (error) {
+        throw error;
       }
-    };
 
+      setProfiles(data || []);
+    } catch (error: any) {
+      toast.error(`Failed to load user profiles: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchProfiles();
   }, []);
+
+  const handleRefresh = () => {
+    fetchProfiles();
+    toast.info('Refreshing user list...');
+  };
 
   return (
     <Card className="mb-8">
@@ -56,13 +62,23 @@ const AdminUsersSection: React.FC<AdminUsersSectionProps> = ({ onBack }) => {
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={onBack}
-          >
-            Back to Dashboard
-          </Button>
+          <div className="flex justify-between items-center">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={onBack}
+            >
+              Back to Dashboard
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={handleRefresh}
+            >
+              <RefreshCcw className="h-4 w-4 mr-2" />
+              Refresh
+            </Button>
+          </div>
 
           {loading ? (
             <div className="p-8 text-center">
@@ -74,27 +90,27 @@ const AdminUsersSection: React.FC<AdminUsersSectionProps> = ({ onBack }) => {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr className="bg-gray-50">
-                    <th className="p-2 text-left">Name</th>
-                    <th className="p-2 text-left">Role</th>
-                    <th className="p-2 text-left">Joined</th>
-                    <th className="p-2 text-left">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Role</TableHead>
+                    <TableHead>Joined</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {profiles.map((profile) => (
-                    <tr key={profile.id} className="border-t">
-                      <td className="p-2">{profile.name || 'Unnamed User'}</td>
-                      <td className="p-2 capitalize">{profile.role}</td>
-                      <td className="p-2">
+                    <TableRow key={profile.id}>
+                      <TableCell>{profile.name || 'Unnamed User'}</TableCell>
+                      <TableCell className="capitalize">{profile.role}</TableCell>
+                      <TableCell>
                         {profile.created_at 
                           ? new Date(profile.created_at).toLocaleDateString() 
                           : 'Unknown'
                         }
-                      </td>
-                      <td className="p-2">
+                      </TableCell>
+                      <TableCell>
                         <Button 
                           size="sm" 
                           variant="outline"
@@ -102,11 +118,11 @@ const AdminUsersSection: React.FC<AdminUsersSectionProps> = ({ onBack }) => {
                         >
                           View Details
                         </Button>
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
           )}
         </div>

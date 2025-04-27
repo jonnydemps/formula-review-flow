@@ -2,11 +2,12 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { FileText } from 'lucide-react';
+import { FileText, Download, RefreshCcw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import StatusBadge from '@/components/StatusBadge';
 import { FormulaStatus } from '@/types/auth';
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
 
 interface Formula {
   id: string;
@@ -15,6 +16,7 @@ interface Formula {
   created_at: string;
   quote_amount: number | null;
   quote_requested_at: string | null;
+  customer_id: string;
 }
 
 interface AdminFormulasSectionProps {
@@ -24,28 +26,46 @@ interface AdminFormulasSectionProps {
 const AdminFormulasSection: React.FC<AdminFormulasSectionProps> = ({ onBack }) => {
   const [formulas, setFormulas] = useState<Formula[]>([]);
   const [loading, setLoading] = useState(true);
+  const [customerNames, setCustomerNames] = useState<Record<string, string>>({});
+
+  const fetchFormulas = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('formulas')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        throw error;
+      }
+
+      setFormulas(data || []);
+
+      // Fetch customer names
+      if (data && data.length > 0) {
+        const customerIds = [...new Set(data.map(formula => formula.customer_id))];
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, name')
+          .in('id', customerIds);
+
+        if (!profilesError && profilesData) {
+          const namesMap: Record<string, string> = {};
+          profilesData.forEach(profile => {
+            namesMap[profile.id] = profile.name || 'Unknown User';
+          });
+          setCustomerNames(namesMap);
+        }
+      }
+    } catch (error: any) {
+      toast.error(`Failed to load formulas: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchFormulas = async () => {
-      try {
-        setLoading(true);
-        const { data, error } = await supabase
-          .from('formulas')
-          .select('*')
-          .order('created_at', { ascending: false });
-
-        if (error) {
-          throw error;
-        }
-
-        setFormulas(data || []);
-      } catch (error: any) {
-        toast.error(`Failed to load formulas: ${error.message}`);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchFormulas();
   }, []);
 
@@ -85,6 +105,11 @@ const AdminFormulasSection: React.FC<AdminFormulasSectionProps> = ({ onBack }) =
     }
   };
 
+  const handleRefresh = () => {
+    fetchFormulas();
+    toast.info('Refreshing formula list...');
+  };
+
   return (
     <Card className="mb-8">
       <CardHeader>
@@ -96,13 +121,23 @@ const AdminFormulasSection: React.FC<AdminFormulasSectionProps> = ({ onBack }) =
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={onBack}
-          >
-            Back to Dashboard
-          </Button>
+          <div className="flex justify-between items-center">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={onBack}
+            >
+              Back to Dashboard
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={handleRefresh}
+            >
+              <RefreshCcw className="h-4 w-4 mr-2" />
+              Refresh
+            </Button>
+          </div>
 
           {loading ? (
             <div className="p-8 text-center">
@@ -114,30 +149,32 @@ const AdminFormulasSection: React.FC<AdminFormulasSectionProps> = ({ onBack }) =
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr className="bg-gray-50">
-                    <th className="p-2 text-left">File Name</th>
-                    <th className="p-2 text-left">Status</th>
-                    <th className="p-2 text-left">Submitted</th>
-                    <th className="p-2 text-left">Quote</th>
-                    <th className="p-2 text-left">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Customer</TableHead>
+                    <TableHead>File Name</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Submitted</TableHead>
+                    <TableHead>Quote</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {formulas.map((formula) => (
-                    <tr key={formula.id} className="border-t">
-                      <td className="p-2">{formula.original_filename}</td>
-                      <td className="p-2">
+                    <TableRow key={formula.id}>
+                      <TableCell>{customerNames[formula.customer_id] || 'Unknown User'}</TableCell>
+                      <TableCell className="max-w-[200px] truncate">{formula.original_filename}</TableCell>
+                      <TableCell>
                         <StatusBadge status={getFormulaStatus(formula.status)} />
-                      </td>
-                      <td className="p-2">
+                      </TableCell>
+                      <TableCell>
                         {new Date(formula.created_at).toLocaleDateString()}
-                      </td>
-                      <td className="p-2">
+                      </TableCell>
+                      <TableCell>
                         {formula.quote_amount ? `$${formula.quote_amount}` : '-'}
-                      </td>
-                      <td className="p-2">
+                      </TableCell>
+                      <TableCell>
                         {formula.status === 'quote_requested' && (
                           <Button 
                             size="sm" 
@@ -155,11 +192,20 @@ const AdminFormulasSection: React.FC<AdminFormulasSectionProps> = ({ onBack }) =
                             Upload Report
                           </Button>
                         )}
-                      </td>
-                    </tr>
+                        {formula.status === 'completed' && (
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => toast.info("Download report functionality coming soon")}
+                          >
+                            <Download className="h-4 w-4 mr-1" /> Report
+                          </Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
           )}
         </div>

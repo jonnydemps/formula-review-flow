@@ -5,6 +5,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button'; 
+import { RefreshCcw } from 'lucide-react';
 import { toast } from 'sonner';
 import { uploadFormulaFile, createFormula, markFormulaPaid } from '@/services/formulaService';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -48,7 +50,7 @@ const CustomerDashboard: React.FC = () => {
   };
 
   // Fetch formulas for the customer
-  const { data: formulas = [], isLoading } = useQuery({
+  const { data: formulas = [], isLoading, refetch } = useQuery({
     queryKey: ['formulas', user?.id],
     queryFn: getCustomerFormulas,
     enabled: !!user
@@ -58,7 +60,12 @@ const CustomerDashboard: React.FC = () => {
   const uploadMutation = useMutation({
     mutationFn: async ({ file, path }: { file: File, path: string }) => {
       if (!user) throw new Error('User not authenticated');
+      
+      // First upload the file to storage
       const filePath = await uploadFormulaFile(file, path);
+      console.log('File uploaded to storage, path:', filePath);
+      
+      // Then create the formula record
       return createFormula(user.id, filePath, file.name);
     },
     onSuccess: () => {
@@ -66,9 +73,9 @@ const CustomerDashboard: React.FC = () => {
       toast.success('Formula uploaded successfully');
       queryClient.invalidateQueries({ queryKey: ['formulas', user?.id] });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('Upload error:', error);
-      toast.error('Failed to upload formula');
+      toast.error(`Failed to upload formula: ${error.message}`);
     },
     onSettled: () => {
       setIsUploading(false);
@@ -82,9 +89,9 @@ const CustomerDashboard: React.FC = () => {
       toast.success('Payment successful! Your report will be ready soon.');
       queryClient.invalidateQueries({ queryKey: ['formulas', user?.id] });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('Payment error:', error);
-      toast.error('Failed to process payment');
+      toast.error(`Failed to process payment: ${error.message}`);
     }
   });
 
@@ -100,6 +107,11 @@ const CustomerDashboard: React.FC = () => {
     }, 2000);
   };
 
+  const handleRefresh = () => {
+    refetch();
+    toast.info('Refreshing formulas...');
+  };
+
   if (!user) {
     return null;
   }
@@ -110,10 +122,20 @@ const CustomerDashboard: React.FC = () => {
       <main className="flex-grow bg-gray-50">
         <div className="container mx-auto px-4">
           <div className="py-8">
-            <h1 className="text-3xl font-bold mb-2">Customer Dashboard</h1>
-            <p className="text-gray-600 mb-6">
-              Upload formulas, track reviews, and download reports
-            </p>
+            <div className="flex flex-col md:flex-row md:items-center justify-between mb-6">
+              <div>
+                <h1 className="text-3xl font-bold">Customer Dashboard</h1>
+                <p className="text-gray-600">
+                  Upload formulas, track reviews, and download reports
+                </p>
+              </div>
+              <div className="mt-4 md:mt-0">
+                <Button onClick={handleRefresh} variant="outline" size="sm">
+                  <RefreshCcw className="h-4 w-4 mr-2" />
+                  Refresh
+                </Button>
+              </div>
+            </div>
             
             <UploadSection 
               showUploader={showUploader}

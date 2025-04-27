@@ -14,7 +14,7 @@ interface FormulaItemProps {
   status: string;
   createdAt: string;
   quoteAmount: number | null;
-  onUpdate: () => void;
+  onAcceptQuote: (id: string, quote: number) => void;
 }
 
 const FormulaItem: React.FC<FormulaItemProps> = ({
@@ -23,7 +23,7 @@ const FormulaItem: React.FC<FormulaItemProps> = ({
   status,
   createdAt,
   quoteAmount,
-  onUpdate
+  onAcceptQuote
 }) => {
   const navigate = useNavigate();
 
@@ -52,14 +52,18 @@ const FormulaItem: React.FC<FormulaItemProps> = ({
       if (error) throw error;
 
       toast.success('Quote requested successfully');
-      onUpdate();
+      // We no longer call onUpdate directly, the customer dashboard will refresh via React Query
     } catch (error: any) {
       toast.error(`Failed to request quote: ${error.message}`);
     }
   };
 
   const handlePayment = () => {
-    navigate('/payment', { state: { formulaId: id, amount: quoteAmount } });
+    if (quoteAmount) {
+      onAcceptQuote(id, quoteAmount);
+    } else {
+      toast.error('Quote amount is not available');
+    }
   };
 
   return (

@@ -43,7 +43,7 @@ const FormulaList: React.FC<FormulaListProps> = ({ formulas, isLoading, onAccept
           status={formula.status}
           createdAt={formula.created_at || formula.uploadDate}
           quoteAmount={formula.quote_amount || formula.quote}
-          onUpdate={() => {}}
+          onAcceptQuote={onAcceptQuote}
         />
       ))}
     </div>

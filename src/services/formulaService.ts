@@ -1,14 +1,13 @@
 
 import { supabase } from '@/integrations/supabase/client';
-
-export type FormulStatus = 'pending' | 'quote' | 'paid' | 'completed';
+import { FormulaStatus } from '@/types/auth';
 
 export interface Formula {
   id: string;
   name: string;
   originalFilename: string;
   uploadDate: string;
-  status: FormulStatus;
+  status: FormulaStatus;
   filePath: string;
   quote?: number;
   reportUrl?: string;
@@ -18,6 +17,22 @@ export interface Formula {
 export const uploadFormulaFile = async (file: File, filePath: string) => {
   try {
     console.log('Uploading file:', file.name, 'to path:', filePath);
+    
+    // Ensure the formula_files bucket exists (You may need to create it in Supabase dashboard)
+    const { data: buckets, error: bucketError } = await supabase.storage.listBuckets();
+    
+    if (bucketError) {
+      console.error('Error checking buckets:', bucketError);
+      throw bucketError;
+    }
+    
+    const bucketExists = buckets.some(bucket => bucket.name === 'formula_files');
+    
+    if (!bucketExists) {
+      console.warn('formula_files bucket does not exist, uploads may fail');
+      // Note: You need to create the bucket in Supabase dashboard if it doesn't exist
+    }
+    
     const { error } = await supabase.storage
       .from('formula_files')
       .upload(filePath, file);
@@ -73,102 +88,6 @@ export const createFormula = async (customerId: string, filePath: string, origin
   }
 };
 
-// Get all formulas for a customer
-export const getCustomerFormulas = async (customerId: string) => {
-  try {
-    console.log('Getting formulas for customer:', customerId);
-    const { data, error } = await supabase
-      .from('formulas')
-      .select('*')
-      .eq('customer_id', customerId)
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.error('Error fetching customer formulas:', error);
-      throw error;
-    }
-
-    console.log(`Found ${data.length} formula(s) for customer`);
-    return data.map(formula => ({
-      id: formula.id,
-      name: formula.original_filename,
-      originalFilename: formula.original_filename,
-      uploadDate: new Date(formula.created_at).toISOString().split('T')[0],
-      status: mapStatusToUI(formula.status),
-      filePath: formula.file_path,
-      quote: formula.quote_amount,
-    }));
-  } catch (error) {
-    console.error('Get customer formulas error:', error);
-    return [];
-  }
-};
-
-// Get all formulas for specialists
-export const getAllFormulas = async () => {
-  try {
-    console.log('Getting all formulas for specialist/admin view');
-    // Fix the query to avoid the join that was causing issues
-    const { data, error } = await supabase
-      .from('formulas')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.error('Error fetching all formulas:', error);
-      throw error;
-    }
-
-    // Process formulas without the profiles join that was causing issues
-    const formulas = data.map(formula => ({
-      id: formula.id,
-      name: formula.original_filename,
-      originalFilename: formula.original_filename,
-      uploadDate: new Date(formula.created_at).toISOString().split('T')[0],
-      status: mapStatusToUI(formula.status),
-      filePath: formula.file_path,
-      quote: formula.quote_amount,
-      customerId: formula.customer_id,
-      // We'll set placeholder values for customer info
-      customerName: 'Customer',
-      customerEmail: ''
-    }));
-    
-    console.log(`Found ${formulas.length} formula(s) total`);
-    return formulas;
-  } catch (error) {
-    console.error('Get all formulas error:', error);
-    return [];
-  }
-};
-
-// Update formula status and quote
-export const updateFormulaQuote = async (formulaId: string, quoteAmount: number) => {
-  try {
-    console.log('Updating formula quote:', formulaId, quoteAmount);
-    const { data, error } = await supabase
-      .from('formulas')
-      .update({
-        quote_amount: quoteAmount,
-        status: 'quote_provided'
-      })
-      .eq('id', formulaId)
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Error updating formula quote:', error);
-      throw error;
-    }
-    
-    console.log('Formula quote updated successfully:', data);
-    return data;
-  } catch (error) {
-    console.error('Update formula quote error:', error);
-    throw error;
-  }
-};
-
 // Mark formula as paid
 export const markFormulaPaid = async (formulaId: string) => {
   try {
@@ -192,27 +111,5 @@ export const markFormulaPaid = async (formulaId: string) => {
   } catch (error) {
     console.error('Mark formula paid error:', error);
     throw error;
-  }
-};
-
-// Helper to map database status to UI status
-const mapStatusToUI = (dbStatus: string | null): FormulStatus => {
-  switch(dbStatus) {
-    case 'pending_review': return 'pending';
-    case 'quote_provided': return 'quote';
-    case 'paid': return 'paid';
-    case 'completed': return 'completed' as FormulStatus;
-    default: return 'pending';
-  }
-};
-
-// Helper to map UI status to database status
-export const mapUIToDbStatus = (uiStatus: FormulStatus): string => {
-  switch(uiStatus) {
-    case 'pending': return 'pending_review';
-    case 'quote': return 'quote_provided';
-    case 'paid': return 'paid';
-    case 'completed': return 'completed';
-    default: return 'pending_review';
   }
 };
