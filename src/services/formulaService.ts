@@ -133,7 +133,12 @@ export const getAllFormulas = async () => {
   try {
     const { data, error } = await supabase
       .from('formulas')
-      .select('*, profiles(name)')
+      .select(`
+        *,
+        customer:customer_id (
+          name
+        )
+      `)
       .order('created_at', { ascending: false });
 
     if (error) {

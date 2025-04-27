@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -36,49 +35,14 @@ const AdminFormulasSection: React.FC<AdminFormulasSectionProps> = ({ onBack }) =
       setLoading(true);
       setError(null);
       
-      // Check auth session first
       const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
       
       if (sessionError || !sessionData.session) {
         throw new Error('Authentication required');
       }
       
-      // Use our service function to get formulas - it will respect RLS
-      let data: any[] = [];
-      try {
-        data = await getAllFormulas();
-      } catch (formulasError: any) {
-        console.error('Error fetching formulas:', formulasError);
-        throw new Error(`Failed to load formulas: ${formulasError.message}`);
-      }
-      
-      setFormulas(data);
-
-      // Fetch customer names if we have formulas
-      if (data && data.length > 0) {
-        const customerIds = [...new Set(data.map(formula => formula.customer_id))].filter(Boolean);
-        
-        // Only proceed if we have customer IDs
-        if (customerIds.length > 0) {
-          try {
-            const { data: profilesData, error: profilesError } = await supabase
-              .from('profiles')
-              .select('id, name')
-              .in('id', customerIds);
-
-            if (!profilesError && profilesData) {
-              const namesMap: Record<string, string> = {};
-              profilesData.forEach(profile => {
-                namesMap[profile.id] = profile.name || 'Unknown User';
-              });
-              setCustomerNames(namesMap);
-            }
-          } catch (profilesError) {
-            console.error('Error fetching customer names:', profilesError);
-            // Don't throw here, just continue with missing names
-          }
-        }
-      }
+      const data = await getAllFormulas();
+      setFormulas(data || []);
     } catch (error: any) {
       console.error('Failed to load formulas:', error);
       setError(error.message || 'Failed to load formulas');
@@ -116,7 +80,6 @@ const AdminFormulasSection: React.FC<AdminFormulasSectionProps> = ({ onBack }) =
     }
   };
 
-  // Convert the string status to FormulaStatus for the StatusBadge
   const getFormulaStatus = (status: string): FormulaStatus => {
     switch(status) {
       case 'pending_review': return 'pending_review';
