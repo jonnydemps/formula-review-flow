@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -16,10 +15,9 @@ const SignIn: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   
-  // If already authenticated, redirect to appropriate dashboard
   if (user) {
     if (user.role === 'admin') return <Navigate to="/admin-dashboard" />;
-    return <Navigate to={user.role === 'specialist' ? '/specialist-dashboard' : '/customer-dashboard'} />;
+    return <Navigate to="/customer-dashboard" />;
   }
 
   const handleSubmit = async (e: React.FormEvent) => {

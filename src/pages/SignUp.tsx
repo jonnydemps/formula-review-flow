@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { TestTube, User } from 'lucide-react';
 
 const SignUp: React.FC = () => {
@@ -15,14 +14,12 @@ const SignUp: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [role, setRole] = useState<'customer' | 'specialist'>('specialist');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   
-  // If already authenticated, redirect to appropriate dashboard
   if (user) {
     if (user.role === 'admin') return <Navigate to="/admin-dashboard" />;
-    return <Navigate to={user.role === 'specialist' ? '/specialist-dashboard' : '/customer-dashboard'} />;
+    return <Navigate to="/customer-dashboard" />;
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -42,8 +39,7 @@ const SignUp: React.FC = () => {
     setIsSubmitting(true);
     
     try {
-      console.log('Signing up with role:', role);
-      await signUp(email, password, role, name);
+      await signUp(email, password, 'customer', name);
     } catch (err: any) {
       console.error('Signup error:', err);
       setError(err.message || 'Failed to create account. Please try again.');
@@ -85,6 +81,7 @@ const SignUp: React.FC = () => {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   required
+                  autoComplete="name"
                 />
               </div>
               
@@ -97,6 +94,7 @@ const SignUp: React.FC = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
+                  autoComplete="email"
                 />
               </div>
               
@@ -109,6 +107,7 @@ const SignUp: React.FC = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
+                  autoComplete="new-password"
                 />
               </div>
               
@@ -121,25 +120,8 @@ const SignUp: React.FC = () => {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
+                  autoComplete="new-password"
                 />
-              </div>
-              
-              <div className="space-y-2">
-                <Label>Account Type</Label>
-                <RadioGroup 
-                  value={role} 
-                  onValueChange={(value) => setRole(value as 'customer' | 'specialist')}
-                  className="flex gap-6"
-                >
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="customer" id="customer" />
-                    <Label htmlFor="customer">Customer</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="specialist" id="specialist" />
-                    <Label htmlFor="specialist">Specialist</Label>
-                  </div>
-                </RadioGroup>
               </div>
             </CardContent>
             

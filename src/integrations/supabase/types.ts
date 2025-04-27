@@ -11,32 +11,38 @@ export type Database = {
     Tables: {
       formulas: {
         Row: {
+          batch_request_id: string | null
           created_at: string | null
           customer_id: string | null
           file_path: string
           id: string
           original_filename: string
           quote_amount: number | null
+          quote_requested_at: string | null
           status: Database["public"]["Enums"]["formula_status"] | null
           updated_at: string | null
         }
         Insert: {
+          batch_request_id?: string | null
           created_at?: string | null
           customer_id?: string | null
           file_path: string
           id?: string
           original_filename: string
           quote_amount?: number | null
+          quote_requested_at?: string | null
           status?: Database["public"]["Enums"]["formula_status"] | null
           updated_at?: string | null
         }
         Update: {
+          batch_request_id?: string | null
           created_at?: string | null
           customer_id?: string | null
           file_path?: string
           id?: string
           original_filename?: string
           quote_amount?: number | null
+          quote_requested_at?: string | null
           status?: Database["public"]["Enums"]["formula_status"] | null
           updated_at?: string | null
         }
@@ -112,7 +118,12 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      formula_status: "pending_review" | "quote_provided" | "paid" | "completed"
+      formula_status:
+        | "pending_review"
+        | "quote_provided"
+        | "paid"
+        | "completed"
+        | "quote_requested"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -228,7 +239,13 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      formula_status: ["pending_review", "quote_provided", "paid", "completed"],
+      formula_status: [
+        "pending_review",
+        "quote_provided",
+        "paid",
+        "completed",
+        "quote_requested",
+      ],
     },
   },
 } as const
