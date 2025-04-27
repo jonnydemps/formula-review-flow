@@ -1,143 +1,116 @@
 
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import Header from '@/components/Header';
-import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import { processPayment } from '@/services/paymentService';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Check } from 'lucide-react';
+
+interface LocationState {
+  formulaId: string;
+  amount: number;
+}
 
 const Payment: React.FC = () => {
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [isComplete, setIsComplete] = useState(false);
   const { user } = useAuth();
+  const location = useLocation();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [loading, setLoading] = useState(false);
+  const state = location.state as LocationState;
   
-  const formulaId = searchParams.get('formula');
-  const amount = Number(searchParams.get('amount') || 0);
-
   useEffect(() => {
-    // Redirect if no formula ID or amount
-    if (!formulaId || !amount) {
-      navigate('/customer-dashboard');
-    }
-
-    // Redirect if not authenticated
     if (!user) {
       navigate('/sign-in');
+      return;
     }
-  }, [formulaId, amount, user, navigate]);
+    
+    if (!state?.formulaId || !state?.amount) {
+      toast.error("Missing payment information");
+      navigate('/customer-dashboard');
+    }
+  }, [user, navigate, state]);
 
   const handlePayment = async () => {
-    if (!formulaId || !amount) return;
-    
-    setIsProcessing(true);
-    
+    if (!state?.formulaId) {
+      toast.error("Missing formula information");
+      return;
+    }
+
+    setLoading(true);
     try {
-      // Process payment
-      await processPayment(formulaId, amount);
-      
-      // Show success UI
-      setIsComplete(true);
-      toast.success('Payment successful!');
-      
-      // Redirect back to dashboard after delay
-      setTimeout(() => {
-        navigate('/customer-dashboard');
-      }, 3000);
-    } catch (error) {
-      console.error('Payment error:', error);
-      toast.error('Payment failed. Please try again.');
-      setIsProcessing(false);
+      // In a real app, you would integrate with a payment provider here
+      // For now, we'll just simulate a successful payment
+      setTimeout(async () => {
+        try {
+          const { error } = await supabase
+            .from('formulas')
+            .update({ status: 'paid' })
+            .eq('id', state.formulaId);
+
+          if (error) throw error;
+          
+          toast.success('Payment successful!');
+          navigate('/customer-dashboard');
+        } catch (error: any) {
+          toast.error(`Payment processing failed: ${error.message}`);
+        } finally {
+          setLoading(false);
+        }
+      }, 2000); // Simulate payment processing delay
+    } catch (error: any) {
+      toast.error(`Payment initialization failed: ${error.message}`);
+      setLoading(false);
     }
   };
 
-  if (!formulaId || !amount || !user) {
+  if (!user || !state?.formulaId || !state?.amount) {
     return null;
   }
 
   return (
     <div className="flex flex-col min-h-screen">
       <Header />
-      
-      <main className="flex-grow bg-gray-50 flex items-center justify-center">
-        <div className="container max-w-md px-4 py-16">
-          {!isComplete ? (
-            <Card>
-              <CardHeader>
-                <CardTitle>Complete Payment</CardTitle>
-                <CardDescription>
-                  Secure payment for formula review
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="border-b pb-4">
-                  <div className="flex justify-between mb-2">
-                    <span className="text-gray-600">Formula Review:</span>
-                    <span className="font-medium">${amount.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between font-semibold">
-                    <span>Total:</span>
-                    <span>${amount.toFixed(2)}</span>
-                  </div>
-                </div>
-                
-                {/* Payment form would go here in a real app */}
-                <div className="p-4 bg-gray-50 rounded-md">
-                  <p className="text-sm text-gray-500 text-center">
-                    This is a demo payment page. No actual payment will be processed.
-                  </p>
-                </div>
-              </CardContent>
-              <CardFooter>
-                <Button 
-                  className="w-full" 
-                  onClick={handlePayment}
-                  disabled={isProcessing}
-                >
-                  {isProcessing ? 'Processing...' : 'Pay Now'}
-                </Button>
-              </CardFooter>
-            </Card>
-          ) : (
-            <Card>
-              <CardHeader className="text-center">
-                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Check className="h-8 w-8 text-green-600" />
-                </div>
-                <CardTitle>Payment Successful!</CardTitle>
-                <CardDescription>
-                  Your formula review is now in progress
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="text-center">
-                <p>
-                  Thank you for your payment of ${amount.toFixed(2)}. Our specialists will 
-                  now review your formula and prepare a comprehensive report.
-                </p>
-              </CardContent>
-              <CardFooter className="flex justify-center">
-                <Button onClick={() => navigate('/customer-dashboard')}>
-                  Return to Dashboard
-                </Button>
-              </CardFooter>
-            </Card>
-          )}
-        </div>
+      <main className="flex-1 p-6 flex items-center justify-center bg-gray-50">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle>Payment</CardTitle>
+            <CardDescription>
+              Complete payment for your formula review
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="p-4 bg-gray-100 rounded-md">
+              <div className="flex justify-between mb-2">
+                <span>Formula Review Service</span>
+                <span>${state.amount}</span>
+              </div>
+              <div className="border-t pt-2 flex justify-between font-medium">
+                <span>Total</span>
+                <span>${state.amount}</span>
+              </div>
+            </div>
+
+            <div className="border rounded-md p-4">
+              <h3 className="font-medium mb-2">Payment Method</h3>
+              <p className="text-sm text-gray-500 mb-4">
+                In a production app, a credit card form would be integrated here.
+                For demo purposes, payment will be processed automatically.
+              </p>
+            </div>
+          </CardContent>
+          <CardFooter>
+            <Button 
+              className="w-full" 
+              onClick={handlePayment}
+              disabled={loading}
+            >
+              {loading ? 'Processing...' : `Pay $${state.amount}`}
+            </Button>
+          </CardFooter>
+        </Card>
       </main>
-      
-      <Footer />
     </div>
   );
 };

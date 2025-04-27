@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -18,8 +19,8 @@ const Home: React.FC = () => {
 
   // Decide where to direct the user based on their authentication status and role
   const getStartedLink = user 
-    ? user.role === 'specialist' 
-      ? '/specialist-dashboard' 
+    ? user.role === 'admin'
+      ? '/admin-dashboard' 
       : '/customer-dashboard'
     : '/sign-up';
 
