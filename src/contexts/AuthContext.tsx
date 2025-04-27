@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -9,6 +8,9 @@ import { signIn, signUp, signOut } from '@/services/authService';
 import { toast } from 'sonner';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+// Admin email addresses - should match those in profileService.ts
+const ADMIN_EMAILS = ['john-dempsey@hotmail.co.uk'];
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -22,6 +24,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (event === 'SIGNED_IN' && session?.user) {
         setIsLoading(true);
         try {
+          // Check for admin email first - fastest path
+          if (ADMIN_EMAILS.includes(session.user.email || '')) {
+            const adminUser = {
+              id: session.user.id,
+              email: session.user.email || '',
+              role: 'admin' as UserRole,
+              name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'Admin'
+            };
+            setUser(adminUser);
+            navigateBasedOnRole(navigate, adminUser);
+            setIsLoading(false);
+            return;
+          }
+          
+          // Otherwise, use the standard profile fetch
           const userData = await fetchUserProfile(session.user);
           setUser(userData);
           navigateBasedOnRole(navigate, userData);
@@ -41,6 +58,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setUser(fallbackUser);
             navigateBasedOnRole(navigate, fallbackUser);
           } else {
+            // Special case for admin emails
+            if (ADMIN_EMAILS.includes(session.user.email || '')) {
+              const adminUser = {
+                id: session.user.id,
+                email: session.user.email || '',
+                role: 'admin' as UserRole,
+                name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'Admin'
+              };
+              setUser(adminUser);
+              navigateBasedOnRole(navigate, adminUser);
+              setIsLoading(false);
+              return;
+            }
+            
             await supabase.auth.signOut();
             setUser(null);
           }
@@ -59,6 +90,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (session?.user) {
         setIsLoading(true);
         try {
+          // Check for admin email first - fastest path
+          if (ADMIN_EMAILS.includes(session.user.email || '')) {
+            const adminUser = {
+              id: session.user.id,
+              email: session.user.email || '',
+              role: 'admin' as UserRole,
+              name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'Admin'
+            };
+            setUser(adminUser);
+            navigateBasedOnRole(navigate, adminUser);
+            setIsLoading(false);
+            return;
+          }
+          
+          // Otherwise use standard profile fetch
           const userData = await fetchUserProfile(session.user);
           setUser(userData);
           navigateBasedOnRole(navigate, userData);
@@ -76,6 +122,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             
             setUser(fallbackUser);
             navigateBasedOnRole(navigate, fallbackUser);
+          }
+          // Special case for admin emails
+          else if (ADMIN_EMAILS.includes(session.user.email || '')) {
+            const adminUser = {
+              id: session.user.id,
+              email: session.user.email || '',
+              role: 'admin' as UserRole,
+              name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'Admin'
+            };
+            setUser(adminUser);
+            navigateBasedOnRole(navigate, adminUser);
           }
         } finally {
           setIsLoading(false);
@@ -105,13 +162,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       await signUp(email, password, role, name);
       
-      setTimeout(async () => {
-        try {
-          await handleSignIn(email, password);
-        } catch (err) {
-          console.error('Error during auto-signin after signup:', err);
-        }
-      }, 1000);
+      // Don't try to auto-sign in after signup - this can cause issues with email confirmation
     } finally {
       setIsLoading(false);
     }

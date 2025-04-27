@@ -35,7 +35,7 @@ export const signUp = async (email: string, password: string, role: UserRole, na
   try {
     console.log('Starting signup process for:', email, 'with role:', role);
     
-    // First, create the auth user
+    // First, create the auth user with metadata
     const { data: authData, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
@@ -58,7 +58,8 @@ export const signUp = async (email: string, password: string, role: UserRole, na
     
     console.log('Auth signup successful, user ID:', authData.user.id);
 
-    // Then create the user profile with role information
+    // Then create the user profile with role information - but don't worry if it fails
+    // We'll create it on first successful login
     try {
       const { error: profileError } = await supabase
         .from('profiles')
@@ -71,9 +72,8 @@ export const signUp = async (email: string, password: string, role: UserRole, na
         ]);
 
       if (profileError) {
-        console.error('Profile creation error:', profileError);
+        console.log('Profile creation error:', profileError);
         // Don't throw here, we'll continue with the signup process
-        // The profile will be created on first login if needed
       } else {
         console.log('Profile created successfully for role:', role);
       }
