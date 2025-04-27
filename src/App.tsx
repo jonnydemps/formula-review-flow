@@ -10,6 +10,7 @@ import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
 import CustomerDashboard from "./pages/CustomerDashboard";
 import SpecialistDashboard from "./pages/SpecialistDashboard";
+import AdminDashboard from "./pages/AdminDashboard";
 import Payment from "./pages/Payment";
 import NotFound from "./pages/NotFound";
 
@@ -27,6 +28,7 @@ const App = () => (
             <Route path="/sign-up" element={<SignUp />} />
             <Route path="/customer-dashboard" element={<CustomerDashboard />} />
             <Route path="/specialist-dashboard" element={<SpecialistDashboard />} />
+            <Route path="/admin-dashboard" element={<AdminDashboard />} />
             <Route path="/payment" element={<Payment />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

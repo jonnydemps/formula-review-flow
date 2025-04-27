@@ -21,6 +21,7 @@ const SignUp: React.FC = () => {
   
   // If already authenticated, redirect to appropriate dashboard
   if (user) {
+    if (user.role === 'admin') return <Navigate to="/admin-dashboard" />;
     return <Navigate to={user.role === 'specialist' ? '/specialist-dashboard' : '/customer-dashboard'} />;
   }
 
@@ -41,8 +42,8 @@ const SignUp: React.FC = () => {
     setIsSubmitting(true);
     
     try {
+      console.log('Signing up with role:', role);
       await signUp(email, password, role, name);
-      console.log('Signup successful with role:', role);
     } catch (err: any) {
       console.error('Signup error:', err);
       setError(err.message || 'Failed to create account. Please try again.');

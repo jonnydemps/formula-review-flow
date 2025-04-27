@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { TestTube, LogIn } from 'lucide-react';
+import { toast } from 'sonner';
 
 const SignIn: React.FC = () => {
   const { user, signIn, isLoading } = useAuth();
@@ -17,6 +18,7 @@ const SignIn: React.FC = () => {
   
   // If already authenticated, redirect to appropriate dashboard
   if (user) {
+    if (user.role === 'admin') return <Navigate to="/admin-dashboard" />;
     return <Navigate to={user.role === 'specialist' ? '/specialist-dashboard' : '/customer-dashboard'} />;
   }
 
@@ -26,21 +28,27 @@ const SignIn: React.FC = () => {
     setIsSubmitting(true);
     
     try {
+      toast.info('Attempting to sign in...');
+      console.log('Signing in with:', email);
       await signIn(email, password);
-    } catch (err) {
-      setError('Invalid email or password');
+    } catch (err: any) {
+      console.error('Sign in page error:', err);
+      setError(err.message || 'Invalid email or password');
     } finally {
       setIsSubmitting(false);
     }
   };
   
   // Demo accounts for testing
-  const fillDemoAccount = (type: 'customer' | 'specialist') => {
+  const fillDemoAccount = (type: 'customer' | 'specialist' | 'admin') => {
     if (type === 'customer') {
       setEmail('customer@example.com');
       setPassword('password123');
-    } else {
+    } else if (type === 'specialist') {
       setEmail('specialist@example.com');
+      setPassword('password123');
+    } else {
+      setEmail('admin@example.com');
       setPassword('password123');
     }
   };
@@ -114,7 +122,7 @@ const SignIn: React.FC = () => {
 
               <div className="border-t pt-4 text-sm text-center text-gray-500">
                 <p className="mb-2">Demo Accounts:</p>
-                <div className="flex gap-2 justify-center">
+                <div className="flex flex-wrap gap-2 justify-center">
                   <Button 
                     type="button"
                     variant="outline" 
@@ -130,6 +138,14 @@ const SignIn: React.FC = () => {
                     onClick={() => fillDemoAccount('specialist')}
                   >
                     Specialist Demo
+                  </Button>
+                  <Button 
+                    type="button"
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => fillDemoAccount('admin')}
+                  >
+                    Admin Demo
                   </Button>
                 </div>
               </div>

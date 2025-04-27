@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 
-export type UserRole = 'customer' | 'specialist';
+export type UserRole = 'customer' | 'specialist' | 'admin';
 
 export interface User {
   id: string;
@@ -30,6 +30,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state changed:', event, session?.user?.id);
       if (event === 'SIGNED_IN' && session?.user) {
         await fetchUserProfile(session.user);
       } else if (event === 'SIGNED_OUT') {
@@ -61,7 +62,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .eq('id', authUser.id)
         .single();
 
-      if (profileError) throw profileError;
+      if (profileError) {
+        console.error('Error fetching profile:', profileError);
+        throw profileError;
+      }
+
+      if (!profileData) {
+        console.error('No profile found for user:', authUser.id);
+        throw new Error('No profile found');
+      }
+
+      console.log('Profile data fetched:', profileData);
 
       const userData: User = {
         id: authUser.id,
@@ -72,10 +83,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       setUser(userData);
 
+      // Redirect based on user role
       if (userData.role === 'customer') {
         navigate('/customer-dashboard');
       } else if (userData.role === 'specialist') {
         navigate('/specialist-dashboard');
+      } else if (userData.role === 'admin') {
+        navigate('/admin-dashboard');
       }
     } catch (error) {
       console.error('Error fetching user profile:', error);
@@ -88,6 +102,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signIn = async (email: string, password: string) => {
     setIsLoading(true);
     try {
+      console.log('Attempting sign in for:', email);
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
@@ -95,6 +110,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (error) throw error;
 
+      console.log('Sign in successful:', data.user?.id);
       toast.success('Successfully signed in');
       
       if (data.user) {
@@ -112,25 +128,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signUp = async (email: string, password: string, role: UserRole, name: string) => {
     setIsLoading(true);
     try {
+      console.log('Starting signup process for:', email, 'with role:', role);
+      
       // Step 1: Sign up the user with Supabase Auth
       const { data: authData, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
-        options: {
-          data: {
-            name,
-            role
-          }
-        }
       });
 
-      if (signUpError) throw signUpError;
+      if (signUpError) {
+        console.error('Auth signup error:', signUpError);
+        throw signUpError;
+      }
       
       if (!authData.user) {
         throw new Error('No user data returned after signup');
       }
+      
+      console.log('Auth signup successful, user ID:', authData.user.id);
 
-      // Step 2: Create the user profile manually
+      // Step 2: Create the profile entry
       const { error: profileError } = await supabase
         .from('profiles')
         .insert([
@@ -143,16 +160,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (profileError) {
         console.error('Profile creation error:', profileError);
-        // Attempt to clean up the auth user since profile creation failed
+        // If profile creation fails, clean up the auth user
         await supabase.auth.signOut();
         throw profileError;
       }
-
-      toast.success('Account created successfully');
-      console.log('Profile created successfully for role:', role);
       
-      // Automatically sign in the user after successful signup
-      await signIn(email, password);
+      console.log('Profile created successfully for role:', role);
+      toast.success('Account created successfully');
+      
+      // Wait a moment for the database to update before signing in
+      setTimeout(async () => {
+        try {
+          await signIn(email, password);
+        } catch (err) {
+          console.error('Error during auto-signin after signup:', err);
+        }
+      }, 1000);
+      
     } catch (error: any) {
       console.error('Sign up error:', error);
       

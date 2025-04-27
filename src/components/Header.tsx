@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -9,7 +10,8 @@ import {
   Menu,
   X,
   TestTube,
-  FileUp
+  FileUp,
+  Shield
 } from 'lucide-react';
 
 const Header: React.FC = () => {
@@ -18,6 +20,37 @@ const Header: React.FC = () => {
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
   const closeMenu = () => setIsMenuOpen(false);
+
+  const getDashboardLink = () => {
+    if (!user) return '/';
+    
+    switch (user.role) {
+      case 'admin': return '/admin-dashboard';
+      case 'specialist': return '/specialist-dashboard';
+      case 'customer': return '/customer-dashboard';
+      default: return '/';
+    }
+  };
+
+  const getDashboardLabel = () => {
+    if (!user) return 'Dashboard';
+    
+    switch (user.role) {
+      case 'admin': return 'Admin Dashboard';
+      case 'specialist': return 'Specialist Dashboard';
+      case 'customer': return 'Customer Dashboard';
+      default: return 'Dashboard';
+    }
+  };
+
+  const getDashboardIcon = () => {
+    if (!user) return <FileUp className="h-4 w-4" />;
+    
+    switch (user.role) {
+      case 'admin': return <Shield className="h-4 w-4" />;
+      default: return <FileUp className="h-4 w-4" />;
+    }
+  };
 
   return (
     <header className="bg-white shadow-sm sticky top-0 z-50">
@@ -38,14 +71,14 @@ const Header: React.FC = () => {
           {user ? (
             <>
               <Link 
-                to={user.role === 'specialist' ? '/specialist-dashboard' : '/customer-dashboard'}
+                to={getDashboardLink()}
                 className="text-gray-600 hover:text-ra-blue transition-colors"
               >
-                Dashboard
+                {getDashboardLabel()}
               </Link>
               <div className="flex items-center gap-4">
                 <span className="text-sm text-gray-500">
-                  {user.name || user.email}
+                  {user.name || user.email} ({user.role})
                 </span>
                 <Button variant="outline" onClick={signOut} size="sm">
                   Sign Out
@@ -90,18 +123,18 @@ const Header: React.FC = () => {
             {user ? (
               <>
                 <Link 
-                  to={user.role === 'specialist' ? '/specialist-dashboard' : '/customer-dashboard'} 
+                  to={getDashboardLink()} 
                   className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded-md"
                   onClick={closeMenu}
                 >
-                  <FileUp className="h-4 w-4" />
-                  Dashboard
+                  {getDashboardIcon()}
+                  {getDashboardLabel()}
                 </Link>
                 <div className="border-t my-2" />
                 <div className="flex items-center justify-between p-2">
                   <span className="text-sm text-gray-500 flex items-center gap-2">
                     <User className="h-4 w-4" />
-                    {user.name || user.email}
+                    {user.name || user.email} ({user.role})
                   </span>
                   <Button variant="outline" onClick={() => { signOut(); closeMenu(); }} size="sm">
                     Sign Out
