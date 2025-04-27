@@ -38,20 +38,6 @@ const SignIn: React.FC = () => {
       setIsSubmitting(false);
     }
   };
-  
-  // Demo accounts for testing
-  const fillDemoAccount = (type: 'customer' | 'specialist' | 'admin') => {
-    if (type === 'customer') {
-      setEmail('customer@example.com');
-      setPassword('password123');
-    } else if (type === 'specialist') {
-      setEmail('specialist@example.com');
-      setPassword('password123');
-    } else {
-      setEmail('admin@example.com');
-      setPassword('password123');
-    }
-  };
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
@@ -87,6 +73,7 @@ const SignIn: React.FC = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
+                  autoComplete="email"
                 />
               </div>
               
@@ -99,6 +86,7 @@ const SignIn: React.FC = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
+                  autoComplete="current-password"
                 />
               </div>
             </CardContent>
@@ -118,36 +106,6 @@ const SignIn: React.FC = () => {
                 <Link to="/sign-up" className="text-ra-blue hover:underline">
                   Sign Up
                 </Link>
-              </div>
-
-              <div className="border-t pt-4 text-sm text-center text-gray-500">
-                <p className="mb-2">Demo Accounts:</p>
-                <div className="flex flex-wrap gap-2 justify-center">
-                  <Button 
-                    type="button"
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => fillDemoAccount('customer')}
-                  >
-                    Customer Demo
-                  </Button>
-                  <Button 
-                    type="button"
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => fillDemoAccount('specialist')}
-                  >
-                    Specialist Demo
-                  </Button>
-                  <Button 
-                    type="button"
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => fillDemoAccount('admin')}
-                  >
-                    Admin Demo
-                  </Button>
-                </div>
               </div>
             </CardFooter>
           </form>

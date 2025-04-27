@@ -1,6 +1,7 @@
 
 import { User, UserRole } from '@/types/auth';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 // Admin email addresses - use your own email here to gain admin access
 const ADMIN_EMAILS = ['john-dempsey@hotmail.co.uk'];
@@ -41,7 +42,7 @@ export const fetchUserProfile = async (authUser: any): Promise<User> => {
       try {
         const { error: insertError } = await supabase
           .from('profiles')
-          .insert({
+          .upsert({
             id: authUser.id,
             name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'User',
             role: defaultRole
@@ -85,6 +86,7 @@ export const fetchUserProfile = async (authUser: any): Promise<User> => {
         };
       } catch (insertError) {
         console.error('Profile creation exception:', insertError);
+        console.log('Returning default user profile due to permission error');
         // Return a default user object if profile creation fails
         return {
           id: authUser.id,
