@@ -1,6 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
 import { FormulaStatus } from '@/types/auth';
-import { toast } from 'sonner';
 
 export interface Formula {
   id: string;
@@ -16,20 +15,6 @@ export interface Formula {
 export const uploadFormulaFile = async (file: File, filePath: string) => {
   try {
     console.log('Uploading file:', file.name, 'to path:', filePath);
-    
-    const { data: buckets, error: bucketsError } = await supabase.storage
-      .listBuckets();
-    
-    if (bucketsError) {
-      console.error('Error checking buckets:', bucketsError);
-      throw new Error('Storage system not accessible');
-    }
-    
-    const formulaBucket = buckets.find(b => b.id === 'formula_files');
-    if (!formulaBucket) {
-      console.error('formula_files bucket not found');
-      throw new Error('Storage bucket not configured');
-    }
     
     const { error } = await supabase.storage
       .from('formula_files')
@@ -135,8 +120,9 @@ export const getAllFormulas = async () => {
       .from('formulas')
       .select(`
         *,
-        customer:customer_id (
-          name
+        customer:profiles!formulas_customer_id_fkey (
+          name,
+          email
         )
       `)
       .order('created_at', { ascending: false });

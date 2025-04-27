@@ -23,7 +23,7 @@ export const fetchUserProfile = async (authUser: any): Promise<User> => {
     // Use maybeSingle() instead of single() to handle cases where profile might not exist
     const { data: profileData, error: profileError } = await supabase
       .from('profiles')
-      .select('*')
+      .select('role, name')
       .eq('id', authUser.id)
       .maybeSingle();
 
