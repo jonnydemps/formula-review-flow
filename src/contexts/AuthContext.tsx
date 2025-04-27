@@ -1,11 +1,10 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { User, UserRole, AuthContextType } from '@/types/auth';
+import { User, AuthContextType } from '@/types/auth';
 import { fetchUserProfile } from '@/services/profileService';
 import { navigateBasedOnRole } from '@/utils/navigationUtils';
+import { signIn, signUp, signOut } from '@/services/authService';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -55,103 +54,49 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, [navigate]);
 
-  const signIn = async (email: string, password: string) => {
+  const handleSignIn = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      console.log('Attempting sign in for:', email);
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
-
-      if (error) throw error;
-
-      console.log('Sign in successful:', data.user?.id);
-      toast.success('Successfully signed in');
-    } catch (error: any) {
-      console.error('Sign in error:', error);
-      toast.error(error.message || 'Failed to sign in');
-      throw error;
+      await signIn(email, password);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const signUp = async (email: string, password: string, role: UserRole, name: string) => {
+  const handleSignUp = async (email: string, password: string, role: UserRole, name: string) => {
     setIsLoading(true);
     try {
-      console.log('Starting signup process for:', email, 'with role:', role);
-      
-      const { data: authData, error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
-      });
-
-      if (signUpError) {
-        console.error('Auth signup error:', signUpError);
-        throw signUpError;
-      }
-      
-      if (!authData.user) {
-        throw new Error('No user data returned after signup');
-      }
-      
-      console.log('Auth signup successful, user ID:', authData.user.id);
-
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert([
-          {
-            id: authData.user.id,
-            name: name,
-            role: role
-          }
-        ]);
-
-      if (profileError) {
-        console.error('Profile creation error:', profileError);
-        await supabase.auth.signOut();
-        throw profileError;
-      }
-      
-      console.log('Profile created successfully for role:', role);
-      toast.success('Account created successfully');
+      await signUp(email, password, role, name);
       
       setTimeout(async () => {
         try {
-          await signIn(email, password);
+          await handleSignIn(email, password);
         } catch (err) {
           console.error('Error during auto-signin after signup:', err);
         }
       }, 1000);
-      
-    } catch (error: any) {
-      console.error('Sign up error:', error);
-      
-      if (error.message?.includes('already registered')) {
-        toast.error('This email is already registered. Please sign in instead.');
-      } else {
-        toast.error('Failed to create account. Please try again.');
-      }
-      throw error;
     } finally {
       setIsLoading(false);
     }
   };
 
-  const signOut = async () => {
+  const handleSignOut = async () => {
     try {
-      await supabase.auth.signOut();
-      toast.success('Signed out successfully');
+      await signOut();
       navigate('/');
     } catch (error) {
-      console.error('Sign out error:', error);
-      toast.error('Failed to sign out');
+      console.error('Error in handleSignOut:', error);
     }
   };
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      isLoading, 
+      signIn: handleSignIn, 
+      signUp: handleSignUp, 
+      signOut: handleSignOut 
+    }}>
       {children}
     </AuthContext.Provider>
   );
