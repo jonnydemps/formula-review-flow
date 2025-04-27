@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { FormulaStatus } from '@/types/auth';
 import { toast } from 'sonner';
@@ -14,32 +13,16 @@ export interface Formula {
   reportUrl?: string;
 }
 
-// Upload formula file to storage
 export const uploadFormulaFile = async (file: File, filePath: string) => {
   try {
     console.log('Uploading file:', file.name, 'to path:', filePath);
     
-    // Check if the formula_files bucket exists
-    const { data: buckets, error: bucketError } = await supabase.storage.listBuckets();
+    const { data: bucketData, error: bucketError } = await supabase.storage
+      .getBucket('formula_files');
     
     if (bucketError) {
-      console.error('Error checking buckets:', bucketError);
-      throw bucketError;
-    }
-    
-    const bucketExists = buckets.some(bucket => bucket.name === 'formula_files');
-    
-    if (!bucketExists) {
-      console.warn('formula_files bucket does not exist, attempting to create it');
-      
-      // Try to create the bucket if it doesn't exist
-      try {
-        // We can't create buckets from client-side, but we can inform the user
-        toast.error('Storage bucket not properly configured. Please try again later.');
-        throw new Error('Storage bucket not configured');
-      } catch (error) {
-        throw new Error('Storage bucket not configured');
-      }
+      console.error('Error accessing formula_files bucket:', bucketError);
+      throw new Error('Storage bucket not accessible');
     }
     
     const { error } = await supabase.storage
@@ -59,12 +42,10 @@ export const uploadFormulaFile = async (file: File, filePath: string) => {
   }
 };
 
-// Create formula record in the database
 export const createFormula = async (customerId: string, filePath: string, originalFilename: string) => {
   try {
     console.log('Creating formula record for customer:', customerId);
     
-    // Check for active session
     const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
     
     if (sessionError || !sessionData.session) {
@@ -72,7 +53,6 @@ export const createFormula = async (customerId: string, filePath: string, origin
       throw new Error('Authentication required to upload formulas');
     }
     
-    // Create the formula entry
     const { data: formulaData, error: formulaError } = await supabase
       .from('formulas')
       .insert({
@@ -97,7 +77,6 @@ export const createFormula = async (customerId: string, filePath: string, origin
   }
 };
 
-// Mark formula as paid
 export const markFormulaPaid = async (formulaId: string) => {
   try {
     console.log('Marking formula as paid:', formulaId);
@@ -123,7 +102,6 @@ export const markFormulaPaid = async (formulaId: string) => {
   }
 };
 
-// Fetch formulas for a customer
 export const getCustomerFormulas = async (customerId: string) => {
   try {
     console.log('Fetching formulas for customer:', customerId);
@@ -145,13 +123,11 @@ export const getCustomerFormulas = async (customerId: string) => {
   }
 };
 
-// Fetch all formulas (admin function)
 export const getAllFormulas = async () => {
   try {
-    // For admin users, we now rely on RLS policies to filter
     const { data, error } = await supabase
       .from('formulas')
-      .select('*')
+      .select('*, profiles(name)')
       .order('created_at', { ascending: false });
 
     if (error) {

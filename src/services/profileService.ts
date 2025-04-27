@@ -21,63 +21,34 @@ export const fetchUserProfile = async (authUser: any): Promise<User> => {
       };
     }
 
-    // Use a simpler query approach to avoid RLS issues
+    // Use maybeSingle() instead of single() to handle cases where profile might not exist
     const { data: profileData, error: profileError } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', authUser.id)
-      .limit(1)
-      .single();
+      .maybeSingle();
 
     if (profileError) {
       console.error('Error fetching profile:', profileError);
-      
-      // Create a fallback profile if we can't fetch the existing one
-      return {
-        id: authUser.id,
-        email: authUser.email || '',
-        role: 'customer' as UserRole,
-        name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'Customer'
-      };
+      throw profileError;
     }
 
     // If no profile exists, create one
     if (!profileData) {
       console.log('No profile found, creating a default profile');
-      // Determine role from user metadata if available, otherwise default to customer
-      const defaultRole: UserRole = authUser.user_metadata?.role as UserRole || 'customer';
+      const defaultRole: UserRole = 'customer';
       
-      try {
-        const { error: insertError } = await supabase
-          .from('profiles')
-          .upsert({
-            id: authUser.id,
-            name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'User',
-            role: defaultRole
-          });
-
-        if (insertError) {
-          console.error('Error creating profile:', insertError);
-          console.log('Returning default user profile due to permission error');
-          return {
-            id: authUser.id,
-            email: authUser.email || '',
-            role: defaultRole,
-            name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'User'
-          };
-        }
-
-        // After creating, use the default profile rather than refetching
-        return {
+      const { error: insertError } = await supabase
+        .from('profiles')
+        .insert({
           id: authUser.id,
-          email: authUser.email || '',
-          role: defaultRole,
-          name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'User'
-        };
-      } catch (insertError) {
-        console.error('Profile creation exception:', insertError);
-        console.log('Returning default user profile due to permission error');
-        // Return a default user object if profile creation fails
+          name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'User',
+          role: defaultRole
+        });
+
+      if (insertError) {
+        console.error('Error creating profile:', insertError);
+        // Return default profile instead of throwing
         return {
           id: authUser.id,
           email: authUser.email || '',
@@ -85,21 +56,26 @@ export const fetchUserProfile = async (authUser: any): Promise<User> => {
           name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'User'
         };
       }
+
+      return {
+        id: authUser.id,
+        email: authUser.email || '',
+        role: defaultRole,
+        name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'User'
+      };
     }
 
-    console.log('Retrieved existing profile:', profileData);
     return {
       id: authUser.id,
       email: authUser.email || '',
       role: profileData.role as UserRole,
-      name: profileData.name
+      name: profileData.name || authUser.email?.split('@')[0] || 'User'
     };
-  } catch (error) {
+  } catch (error: any) {
     console.error('Profile service error:', error);
     
-    // Special case for admin emails
+    // Special case for admin emails during error recovery
     if (ADMIN_EMAILS.includes(authUser.email)) {
-      console.log('Admin email detected during error recovery, assigning admin role');
       return {
         id: authUser.id,
         email: authUser.email || '',
@@ -108,7 +84,7 @@ export const fetchUserProfile = async (authUser: any): Promise<User> => {
       };
     }
     
-    // As a fallback, return a default user with customer role
+    // Return default user profile instead of throwing
     return {
       id: authUser.id,
       email: authUser.email || '',
