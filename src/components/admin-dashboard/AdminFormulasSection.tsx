@@ -2,12 +2,14 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { FileText, Download, RefreshCcw } from 'lucide-react';
+import { FileText, Download, RefreshCcw, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import StatusBadge from '@/components/StatusBadge';
 import { FormulaStatus } from '@/types/auth';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { getAllFormulas } from '@/services/formulaService';
 
 interface Formula {
   id: string;
@@ -26,39 +28,48 @@ interface AdminFormulasSectionProps {
 const AdminFormulasSection: React.FC<AdminFormulasSectionProps> = ({ onBack }) => {
   const [formulas, setFormulas] = useState<Formula[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [customerNames, setCustomerNames] = useState<Record<string, string>>({});
 
   const fetchFormulas = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('formulas')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        throw error;
+      setError(null);
+      
+      // Check auth session first
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !sessionData.session) {
+        throw new Error('Authentication required');
       }
+      
+      // Use our improved service function
+      const data = await getAllFormulas();
+      setFormulas(data);
 
-      setFormulas(data || []);
-
-      // Fetch customer names
+      // Fetch customer names if we have formulas
       if (data && data.length > 0) {
         const customerIds = [...new Set(data.map(formula => formula.customer_id))];
-        const { data: profilesData, error: profilesError } = await supabase
-          .from('profiles')
-          .select('id, name')
-          .in('id', customerIds);
+        
+        // Only proceed if we have customer IDs
+        if (customerIds.length > 0 && customerIds[0]) {
+          const { data: profilesData, error: profilesError } = await supabase
+            .from('profiles')
+            .select('id, name')
+            .in('id', customerIds);
 
-        if (!profilesError && profilesData) {
-          const namesMap: Record<string, string> = {};
-          profilesData.forEach(profile => {
-            namesMap[profile.id] = profile.name || 'Unknown User';
-          });
-          setCustomerNames(namesMap);
+          if (!profilesError && profilesData) {
+            const namesMap: Record<string, string> = {};
+            profilesData.forEach(profile => {
+              namesMap[profile.id] = profile.name || 'Unknown User';
+            });
+            setCustomerNames(namesMap);
+          }
         }
       }
     } catch (error: any) {
+      console.error('Failed to load formulas:', error);
+      setError(error.message || 'Failed to load formulas');
       toast.error(`Failed to load formulas: ${error.message}`);
     } finally {
       setLoading(false);
@@ -139,11 +150,18 @@ const AdminFormulasSection: React.FC<AdminFormulasSectionProps> = ({ onBack }) =
             </Button>
           </div>
 
+          {error && (
+            <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4 mr-2" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
           {loading ? (
             <div className="p-8 text-center">
               <p>Loading formulas...</p>
             </div>
-          ) : formulas.length === 0 ? (
+          ) : formulas.length === 0 && !error ? (
             <div className="p-8 text-center border rounded-md">
               <p>No formulas have been submitted yet.</p>
             </div>
@@ -163,13 +181,13 @@ const AdminFormulasSection: React.FC<AdminFormulasSectionProps> = ({ onBack }) =
                 <TableBody>
                   {formulas.map((formula) => (
                     <TableRow key={formula.id}>
-                      <TableCell>{customerNames[formula.customer_id] || 'Unknown User'}</TableCell>
+                      <TableCell>{(formula.customer_id && customerNames[formula.customer_id]) || 'Unknown User'}</TableCell>
                       <TableCell className="max-w-[200px] truncate">{formula.original_filename}</TableCell>
                       <TableCell>
                         <StatusBadge status={getFormulaStatus(formula.status)} />
                       </TableCell>
                       <TableCell>
-                        {new Date(formula.created_at).toLocaleDateString()}
+                        {formula.created_at ? new Date(formula.created_at).toLocaleDateString() : 'Unknown'}
                       </TableCell>
                       <TableCell>
                         {formula.quote_amount ? `$${formula.quote_amount}` : '-'}

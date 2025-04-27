@@ -1,6 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { FormulaStatus } from '@/types/auth';
+import { toast } from 'sonner';
 
 export interface Formula {
   id: string;
@@ -31,6 +32,8 @@ export const uploadFormulaFile = async (file: File, filePath: string) => {
     if (!bucketExists) {
       console.warn('formula_files bucket does not exist, uploads may fail');
       // Note: You need to create the bucket in Supabase dashboard if it doesn't exist
+      toast.error('Storage bucket not configured correctly. Please contact support.');
+      throw new Error('Storage bucket not configured');
     }
     
     const { error } = await supabase.storage
@@ -44,9 +47,9 @@ export const uploadFormulaFile = async (file: File, filePath: string) => {
 
     console.log('File uploaded successfully');
     return filePath;
-  } catch (error) {
+  } catch (error: any) {
     console.error('File upload error:', error);
-    throw error;
+    throw new Error(`Upload failed: ${error.message || 'Unknown error'}`);
   }
 };
 
@@ -55,11 +58,11 @@ export const createFormula = async (customerId: string, filePath: string, origin
   try {
     console.log('Creating formula record for customer:', customerId);
     
-    // Use upsert with an empty 'insert' parameter to ensure RLS policies are correctly applied
-    const { data, error } = await supabase.auth.getSession();
+    // Check for active session
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
     
-    if (error || !data.session) {
-      console.error('No active session found:', error);
+    if (sessionError || !sessionData.session) {
+      console.error('No active session found:', sessionError);
       throw new Error('Authentication required to upload formulas');
     }
     
@@ -82,9 +85,9 @@ export const createFormula = async (customerId: string, filePath: string, origin
     
     console.log('Formula record created successfully:', formulaData);
     return formulaData;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Create formula error:', error);
-    throw error;
+    throw new Error(`Failed to create formula record: ${error.message || 'Unknown error'}`);
   }
 };
 
@@ -108,8 +111,50 @@ export const markFormulaPaid = async (formulaId: string) => {
     
     console.log('Formula marked as paid successfully:', data);
     return data;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Mark formula paid error:', error);
-    throw error;
+    throw new Error(`Failed to mark formula as paid: ${error.message || 'Unknown error'}`);
+  }
+};
+
+// Fetch formulas for a customer
+export const getCustomerFormulas = async (customerId: string) => {
+  try {
+    console.log('Fetching formulas for customer:', customerId);
+    const { data, error } = await supabase
+      .from('formulas')
+      .select('*')
+      .eq('customer_id', customerId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching formulas:', error);
+      throw error;
+    }
+
+    return data || [];
+  } catch (error: any) {
+    console.error('Error fetching formulas:', error);
+    throw new Error(`Failed to load formulas: ${error.message || 'Unknown error'}`);
+  }
+};
+
+// Fetch all formulas (admin function)
+export const getAllFormulas = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('formulas')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching all formulas:', error);
+      throw error;
+    }
+
+    return data || [];
+  } catch (error: any) {
+    console.error('Error fetching all formulas:', error);
+    throw new Error(`Failed to load formulas: ${error.message || 'Unknown error'}`);
   }
 };

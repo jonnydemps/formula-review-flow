@@ -30,7 +30,15 @@ export const fetchUserProfile = async (authUser: any): Promise<User> => {
 
     if (profileError) {
       console.error('Error fetching profile:', profileError);
-      throw profileError;
+      
+      // Create a fallback profile if we can't fetch the existing one
+      // This avoids leaving the user in a "no profile" state
+      return {
+        id: authUser.id,
+        email: authUser.email || '',
+        role: 'customer' as UserRole,
+        name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'Customer'
+      };
     }
 
     // If no profile exists, create one
@@ -59,30 +67,12 @@ export const fetchUserProfile = async (authUser: any): Promise<User> => {
           };
         }
 
-        // Refetch the newly created profile
-        const { data: newProfileData, error: newProfileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', authUser.id)
-          .single();
-
-        if (newProfileError) {
-          console.error('Error fetching new profile:', newProfileError);
-          // Return a default user object if we can't fetch the profile
-          return {
-            id: authUser.id,
-            email: authUser.email || '',
-            role: defaultRole,
-            name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'User'
-          };
-        }
-
-        console.log('Created and retrieved new profile:', newProfileData);
+        // After creating, use the default profile rather than refetching
         return {
           id: authUser.id,
           email: authUser.email || '',
-          role: newProfileData.role as UserRole,
-          name: newProfileData.name
+          role: defaultRole,
+          name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'User'
         };
       } catch (insertError) {
         console.error('Profile creation exception:', insertError);

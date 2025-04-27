@@ -1,6 +1,8 @@
 
 import React from 'react';
 import FormulaItem from './FormulaItem';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AlertTriangle } from 'lucide-react';
 
 interface Formula {
   id: string;
@@ -13,10 +15,11 @@ interface Formula {
 interface FormulaListProps {
   formulas: any[];
   isLoading: boolean;
+  error?: any;
   onAcceptQuote: (id: string, quote: number) => void;
 }
 
-const FormulaList: React.FC<FormulaListProps> = ({ formulas, isLoading, onAcceptQuote }) => {
+const FormulaList: React.FC<FormulaListProps> = ({ formulas, isLoading, error, onAcceptQuote }) => {
   if (isLoading) {
     return (
       <div className="p-8 text-center">
@@ -25,7 +28,18 @@ const FormulaList: React.FC<FormulaListProps> = ({ formulas, isLoading, onAccept
     );
   }
 
-  if (formulas.length === 0) {
+  if (error) {
+    return (
+      <Alert variant="destructive" className="mb-4">
+        <AlertTriangle className="h-4 w-4 mr-2" />
+        <AlertDescription>
+          Error loading formulas. Please try refreshing the page.
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
+  if (!formulas || formulas.length === 0) {
     return (
       <div className="p-8 text-center border rounded-md">
         <p>You haven't uploaded any formulas yet.</p>

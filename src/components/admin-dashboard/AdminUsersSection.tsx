@@ -2,10 +2,11 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { UserCheck, RefreshCcw } from 'lucide-react';
+import { UserCheck, RefreshCcw, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface Profile {
   id: string;
@@ -21,10 +22,20 @@ interface AdminUsersSectionProps {
 const AdminUsersSection: React.FC<AdminUsersSectionProps> = ({ onBack }) => {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchProfiles = async () => {
     try {
       setLoading(true);
+      setError(null);
+      
+      // Check auth session first
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !sessionData.session) {
+        throw new Error('Authentication required');
+      }
+      
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -36,6 +47,8 @@ const AdminUsersSection: React.FC<AdminUsersSectionProps> = ({ onBack }) => {
 
       setProfiles(data || []);
     } catch (error: any) {
+      console.error('Failed to load user profiles:', error);
+      setError(error.message || 'Failed to load profiles');
       toast.error(`Failed to load user profiles: ${error.message}`);
     } finally {
       setLoading(false);
@@ -80,11 +93,18 @@ const AdminUsersSection: React.FC<AdminUsersSectionProps> = ({ onBack }) => {
             </Button>
           </div>
 
+          {error && (
+            <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4 mr-2" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
           {loading ? (
             <div className="p-8 text-center">
               <p>Loading users...</p>
             </div>
-          ) : profiles.length === 0 ? (
+          ) : profiles.length === 0 && !error ? (
             <div className="p-8 text-center border rounded-md">
               <p>No user profiles found.</p>
             </div>
