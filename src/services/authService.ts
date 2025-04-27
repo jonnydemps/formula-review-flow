@@ -18,7 +18,15 @@ export const signIn = async (email: string, password: string) => {
     return data;
   } catch (error: any) {
     console.error('Sign in error:', error);
-    toast.error(error.message || 'Failed to sign in');
+    
+    // More user-friendly error messages
+    if (error.message?.includes('Invalid login credentials')) {
+      toast.error('Invalid email or password. Please try again.');
+    } else if (error.message?.includes('Email not confirmed')) {
+      toast.error('Please confirm your email before signing in.');
+    } else {
+      toast.error(error.message || 'Failed to sign in');
+    }
     throw error;
   }
 };
@@ -27,9 +35,15 @@ export const signUp = async (email: string, password: string, role: UserRole, na
   try {
     console.log('Starting signup process for:', email, 'with role:', role);
     
+    // First, create the auth user
     const { data: authData, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
+      options: {
+        data: {
+          name: name // Store name in user metadata for easier recovery if needed
+        }
+      }
     });
 
     if (signUpError) {
@@ -43,6 +57,7 @@ export const signUp = async (email: string, password: string, role: UserRole, na
     
     console.log('Auth signup successful, user ID:', authData.user.id);
 
+    // Then create the user profile with role information
     const { error: profileError } = await supabase
       .from('profiles')
       .insert([
@@ -55,6 +70,7 @@ export const signUp = async (email: string, password: string, role: UserRole, na
 
     if (profileError) {
       console.error('Profile creation error:', profileError);
+      // Attempt to rollback by signing out
       await supabase.auth.signOut();
       throw profileError;
     }
@@ -66,8 +82,11 @@ export const signUp = async (email: string, password: string, role: UserRole, na
   } catch (error: any) {
     console.error('Sign up error:', error);
     
+    // More user-friendly error messages
     if (error.message?.includes('already registered')) {
       toast.error('This email is already registered. Please sign in instead.');
+    } else if (error.message?.includes('password')) {
+      toast.error('Password error: ' + error.message);
     } else {
       toast.error('Failed to create account. Please try again.');
     }

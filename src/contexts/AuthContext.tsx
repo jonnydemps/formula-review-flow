@@ -1,10 +1,12 @@
+
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { User, AuthContextType } from '@/types/auth';
+import { User, AuthContextType, UserRole } from '@/types/auth';
 import { fetchUserProfile } from '@/services/profileService';
 import { navigateBasedOnRole } from '@/utils/navigationUtils';
 import { signIn, signUp, signOut } from '@/services/authService';
+import { toast } from 'sonner';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
