@@ -6,10 +6,11 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { Formula, getCustomerFormulas, uploadFormulaFile, createFormula, markFormulaPaid } from '@/services/formulaService';
+import { uploadFormulaFile, createFormula, markFormulaPaid } from '@/services/formulaService';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import FormulaList from '@/components/customer-dashboard/FormulaList';
 import UploadSection from '@/components/customer-dashboard/UploadSection';
+import { supabase } from '@/integrations/supabase/client';
 
 const CustomerDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -27,10 +28,29 @@ const CustomerDashboard: React.FC = () => {
     }
   }, [user, navigate]);
 
+  // Custom fetch function to get customer formulas
+  const getCustomerFormulas = async () => {
+    if (!user) return [];
+    
+    try {
+      const { data, error } = await supabase
+        .from('formulas')
+        .select('*')
+        .eq('customer_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching formulas:', error);
+      return [];
+    }
+  };
+
   // Fetch formulas for the customer
-  const { data: formulas = [], isLoading, error } = useQuery({
+  const { data: formulas = [], isLoading } = useQuery({
     queryKey: ['formulas', user?.id],
-    queryFn: () => user ? getCustomerFormulas(user.id) : Promise.resolve([]),
+    queryFn: getCustomerFormulas,
     enabled: !!user
   });
 
@@ -82,23 +102,6 @@ const CustomerDashboard: React.FC = () => {
 
   if (!user) {
     return null;
-  }
-
-  if (error) {
-    return (
-      <div className="flex flex-col min-h-screen">
-        <Header />
-        <main className="flex-grow bg-gray-50">
-          <div className="container mx-auto px-4 py-8">
-            <div className="text-center py-12">
-              <h2 className="text-2xl font-bold text-red-600">Error loading formulas</h2>
-              <p className="mt-2 text-gray-600">Please try refreshing the page</p>
-            </div>
-          </div>
-        </main>
-        <Footer />
-      </div>
-    );
   }
 
   return (

@@ -1,7 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import React from 'react';
 import FormulaItem from './FormulaItem';
 
 interface Formula {
@@ -12,42 +10,14 @@ interface Formula {
   quote_amount: number | null;
 }
 
-const FormulaList: React.FC = () => {
-  const [formulas, setFormulas] = useState<Formula[]>([]);
-  const [loading, setLoading] = useState(true);
+interface FormulaListProps {
+  formulas: any[];
+  isLoading: boolean;
+  onAcceptQuote: (id: string, quote: number) => void;
+}
 
-  const fetchFormulas = async () => {
-    try {
-      setLoading(true);
-      const { data: userData } = await supabase.auth.getUser();
-      
-      if (!userData.user) {
-        throw new Error('Not authenticated');
-      }
-
-      const { data, error } = await supabase
-        .from('formulas')
-        .select('*')
-        .eq('customer_id', userData.user.id)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        throw error;
-      }
-
-      setFormulas(data || []);
-    } catch (error: any) {
-      toast.error(`Error fetching formulas: ${error.message}`);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchFormulas();
-  }, []);
-
-  if (loading) {
+const FormulaList: React.FC<FormulaListProps> = ({ formulas, isLoading, onAcceptQuote }) => {
+  if (isLoading) {
     return (
       <div className="p-8 text-center">
         <p>Loading your formulas...</p>
@@ -64,17 +34,16 @@ const FormulaList: React.FC = () => {
   }
 
   return (
-    <div className="mt-6">
-      <h2 className="text-xl font-semibold mb-4">Your Formulas</h2>
+    <div className="space-y-4">
       {formulas.map(formula => (
         <FormulaItem
           key={formula.id}
           id={formula.id}
-          filename={formula.original_filename}
+          filename={formula.original_filename || formula.name}
           status={formula.status}
-          createdAt={formula.created_at}
-          quoteAmount={formula.quote_amount}
-          onUpdate={fetchFormulas}
+          createdAt={formula.created_at || formula.uploadDate}
+          quoteAmount={formula.quote_amount || formula.quote}
+          onUpdate={() => {}}
         />
       ))}
     </div>

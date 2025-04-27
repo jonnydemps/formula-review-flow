@@ -6,6 +6,7 @@ import { FileText } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import StatusBadge from '@/components/StatusBadge';
+import { FormulaStatus } from '@/types/auth';
 
 interface Formula {
   id: string;
@@ -72,6 +73,18 @@ const AdminFormulasSection: React.FC<AdminFormulasSectionProps> = ({ onBack }) =
     }
   };
 
+  // Convert the string status to FormulaStatus for the StatusBadge
+  const getFormulaStatus = (status: string): FormulaStatus => {
+    switch(status) {
+      case 'pending_review': return 'pending_review';
+      case 'quote_requested': return 'quote_requested';
+      case 'quote_provided': return 'quote_provided';
+      case 'paid': return 'paid';
+      case 'completed': return 'completed';
+      default: return 'pending_review';
+    }
+  };
+
   return (
     <Card className="mb-8">
       <CardHeader>
@@ -116,7 +129,7 @@ const AdminFormulasSection: React.FC<AdminFormulasSectionProps> = ({ onBack }) =
                     <tr key={formula.id} className="border-t">
                       <td className="p-2">{formula.original_filename}</td>
                       <td className="p-2">
-                        <StatusBadge status={formula.status} />
+                        <StatusBadge status={getFormulaStatus(formula.status)} />
                       </td>
                       <td className="p-2">
                         {new Date(formula.created_at).toLocaleDateString()}
