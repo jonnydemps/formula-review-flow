@@ -17,12 +17,18 @@ export const uploadFormulaFile = async (file: File, filePath: string) => {
   try {
     console.log('Uploading file:', file.name, 'to path:', filePath);
     
-    const { data: bucketData, error: bucketError } = await supabase.storage
-      .getBucket('formula_files');
+    const { data: buckets, error: bucketsError } = await supabase.storage
+      .listBuckets();
     
-    if (bucketError) {
-      console.error('Error accessing formula_files bucket:', bucketError);
-      throw new Error('Storage bucket not accessible');
+    if (bucketsError) {
+      console.error('Error checking buckets:', bucketsError);
+      throw new Error('Storage system not accessible');
+    }
+    
+    const formulaBucket = buckets.find(b => b.id === 'formula_files');
+    if (!formulaBucket) {
+      console.error('formula_files bucket not found');
+      throw new Error('Storage bucket not configured');
     }
     
     const { error } = await supabase.storage

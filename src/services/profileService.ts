@@ -1,9 +1,8 @@
 
 import { User, UserRole } from '@/types/auth';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
 
-// Admin email addresses - use your own email here to gain admin access
+// Admin email addresses
 const ADMIN_EMAILS = ['john-dempsey@hotmail.co.uk'];
 
 export const fetchUserProfile = async (authUser: any): Promise<User> => {
@@ -30,7 +29,13 @@ export const fetchUserProfile = async (authUser: any): Promise<User> => {
 
     if (profileError) {
       console.error('Error fetching profile:', profileError);
-      throw profileError;
+      // Return default profile instead of throwing
+      return {
+        id: authUser.id,
+        email: authUser.email || '',
+        role: 'customer' as UserRole,
+        name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'User'
+      };
     }
 
     // If no profile exists, create one
@@ -48,13 +53,6 @@ export const fetchUserProfile = async (authUser: any): Promise<User> => {
 
       if (insertError) {
         console.error('Error creating profile:', insertError);
-        // Return default profile instead of throwing
-        return {
-          id: authUser.id,
-          email: authUser.email || '',
-          role: defaultRole,
-          name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'User'
-        };
       }
 
       return {
