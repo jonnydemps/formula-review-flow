@@ -33,7 +33,7 @@ const FormulaList: React.FC<FormulaListProps> = ({ formulas, isLoading, error, o
       <Alert variant="destructive" className="mb-4">
         <AlertTriangle className="h-4 w-4 mr-2" />
         <AlertDescription>
-          Error loading formulas. Please try refreshing the page.
+          {error.message || 'Error loading formulas. Please try refreshing the page.'}
         </AlertDescription>
       </Alert>
     );

@@ -36,13 +36,15 @@ const AdminUsersSection: React.FC<AdminUsersSectionProps> = ({ onBack }) => {
         throw new Error('Authentication required');
       }
       
+      // We can now rely on RLS to filter results appropriately
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .order('created_at', { ascending: false });
 
       if (error) {
-        throw error;
+        console.error('Error fetching profiles:', error);
+        throw new Error(error.message || 'Failed to load profiles');
       }
 
       setProfiles(data || []);

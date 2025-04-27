@@ -21,18 +21,18 @@ export const fetchUserProfile = async (authUser: any): Promise<User> => {
       };
     }
 
-    // Use maybeSingle() to handle cases where no profile exists
+    // Use a simpler query approach to avoid RLS issues
     const { data: profileData, error: profileError } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', authUser.id)
-      .maybeSingle();
+      .limit(1)
+      .single();
 
     if (profileError) {
       console.error('Error fetching profile:', profileError);
       
       // Create a fallback profile if we can't fetch the existing one
-      // This avoids leaving the user in a "no profile" state
       return {
         id: authUser.id,
         email: authUser.email || '',

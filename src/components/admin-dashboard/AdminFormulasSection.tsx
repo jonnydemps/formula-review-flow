@@ -43,27 +43,39 @@ const AdminFormulasSection: React.FC<AdminFormulasSectionProps> = ({ onBack }) =
         throw new Error('Authentication required');
       }
       
-      // Use our improved service function
-      const data = await getAllFormulas();
+      // Use our service function to get formulas - it will respect RLS
+      let data: any[] = [];
+      try {
+        data = await getAllFormulas();
+      } catch (formulasError: any) {
+        console.error('Error fetching formulas:', formulasError);
+        throw new Error(`Failed to load formulas: ${formulasError.message}`);
+      }
+      
       setFormulas(data);
 
       // Fetch customer names if we have formulas
       if (data && data.length > 0) {
-        const customerIds = [...new Set(data.map(formula => formula.customer_id))];
+        const customerIds = [...new Set(data.map(formula => formula.customer_id))].filter(Boolean);
         
         // Only proceed if we have customer IDs
-        if (customerIds.length > 0 && customerIds[0]) {
-          const { data: profilesData, error: profilesError } = await supabase
-            .from('profiles')
-            .select('id, name')
-            .in('id', customerIds);
+        if (customerIds.length > 0) {
+          try {
+            const { data: profilesData, error: profilesError } = await supabase
+              .from('profiles')
+              .select('id, name')
+              .in('id', customerIds);
 
-          if (!profilesError && profilesData) {
-            const namesMap: Record<string, string> = {};
-            profilesData.forEach(profile => {
-              namesMap[profile.id] = profile.name || 'Unknown User';
-            });
-            setCustomerNames(namesMap);
+            if (!profilesError && profilesData) {
+              const namesMap: Record<string, string> = {};
+              profilesData.forEach(profile => {
+                namesMap[profile.id] = profile.name || 'Unknown User';
+              });
+              setCustomerNames(namesMap);
+            }
+          } catch (profilesError) {
+            console.error('Error fetching customer names:', profilesError);
+            // Don't throw here, just continue with missing names
           }
         }
       }

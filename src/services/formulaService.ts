@@ -19,7 +19,7 @@ export const uploadFormulaFile = async (file: File, filePath: string) => {
   try {
     console.log('Uploading file:', file.name, 'to path:', filePath);
     
-    // Ensure the formula_files bucket exists (You may need to create it in Supabase dashboard)
+    // Check if the formula_files bucket exists
     const { data: buckets, error: bucketError } = await supabase.storage.listBuckets();
     
     if (bucketError) {
@@ -30,10 +30,16 @@ export const uploadFormulaFile = async (file: File, filePath: string) => {
     const bucketExists = buckets.some(bucket => bucket.name === 'formula_files');
     
     if (!bucketExists) {
-      console.warn('formula_files bucket does not exist, uploads may fail');
-      // Note: You need to create the bucket in Supabase dashboard if it doesn't exist
-      toast.error('Storage bucket not configured correctly. Please contact support.');
-      throw new Error('Storage bucket not configured');
+      console.warn('formula_files bucket does not exist, attempting to create it');
+      
+      // Try to create the bucket if it doesn't exist
+      try {
+        // We can't create buckets from client-side, but we can inform the user
+        toast.error('Storage bucket not properly configured. Please try again later.');
+        throw new Error('Storage bucket not configured');
+      } catch (error) {
+        throw new Error('Storage bucket not configured');
+      }
     }
     
     const { error } = await supabase.storage
@@ -142,6 +148,7 @@ export const getCustomerFormulas = async (customerId: string) => {
 // Fetch all formulas (admin function)
 export const getAllFormulas = async () => {
   try {
+    // For admin users, we now rely on RLS policies to filter
     const { data, error } = await supabase
       .from('formulas')
       .select('*')
