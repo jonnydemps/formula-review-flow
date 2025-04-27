@@ -20,6 +20,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('Auth state changed:', event, session?.user?.id);
       
       if (event === 'SIGNED_IN' && session?.user) {
+        setIsLoading(true);
         try {
           const userData = await fetchUserProfile(session.user);
           setUser(userData);
@@ -27,27 +28,61 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } catch (error) {
           console.error('Error in fetchUserProfile:', error);
           toast.error('Failed to load user profile');
-          await supabase.auth.signOut();
-          setUser(null);
+          
+          // Try to extract role from user metadata as fallback
+          if (session.user.user_metadata?.role) {
+            const fallbackUser = {
+              id: session.user.id,
+              email: session.user.email || '',
+              role: session.user.user_metadata.role as UserRole,
+              name: session.user.user_metadata.name || session.user.email?.split('@')[0] || 'User'
+            };
+            
+            setUser(fallbackUser);
+            navigateBasedOnRole(navigate, fallbackUser);
+          } else {
+            await supabase.auth.signOut();
+            setUser(null);
+          }
+        } finally {
+          setIsLoading(false);
         }
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
         navigate('/');
+        setIsLoading(false);
       }
     });
 
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
+        setIsLoading(true);
         try {
           const userData = await fetchUserProfile(session.user);
           setUser(userData);
           navigateBasedOnRole(navigate, userData);
         } catch (error) {
           console.error('Error in checkSession:', error);
+          
+          // Try to extract role from user metadata as fallback
+          if (session.user.user_metadata?.role) {
+            const fallbackUser = {
+              id: session.user.id,
+              email: session.user.email || '',
+              role: session.user.user_metadata.role as UserRole,
+              name: session.user.user_metadata.name || session.user.email?.split('@')[0] || 'User'
+            };
+            
+            setUser(fallbackUser);
+            navigateBasedOnRole(navigate, fallbackUser);
+          }
+        } finally {
+          setIsLoading(false);
         }
+      } else {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     };
 
     checkSession();

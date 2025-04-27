@@ -41,7 +41,8 @@ export const signUp = async (email: string, password: string, role: UserRole, na
       password,
       options: {
         data: {
-          name: name // Store name in user metadata for easier recovery if needed
+          name: name, // Store name in user metadata for easier recovery if needed
+          role: role  // Store role in metadata as backup
         }
       }
     });
@@ -58,24 +59,29 @@ export const signUp = async (email: string, password: string, role: UserRole, na
     console.log('Auth signup successful, user ID:', authData.user.id);
 
     // Then create the user profile with role information
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .insert([
-        {
-          id: authData.user.id,
-          name: name,
-          role: role
-        }
-      ]);
+    try {
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert([
+          {
+            id: authData.user.id,
+            name: name,
+            role: role
+          }
+        ]);
 
-    if (profileError) {
-      console.error('Profile creation error:', profileError);
-      // Attempt to rollback by signing out
-      await supabase.auth.signOut();
-      throw profileError;
+      if (profileError) {
+        console.error('Profile creation error:', profileError);
+        // Don't throw here, we'll continue with the signup process
+        // The profile will be created on first login if needed
+      } else {
+        console.log('Profile created successfully for role:', role);
+      }
+    } catch (profileError) {
+      console.error('Profile creation exception:', profileError);
+      // Continue with the process, don't block signup
     }
     
-    console.log('Profile created successfully for role:', role);
     toast.success('Account created successfully');
     
     return authData;
