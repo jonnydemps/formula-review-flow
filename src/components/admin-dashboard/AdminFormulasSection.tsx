@@ -29,7 +29,7 @@ const AdminFormulasSection: React.FC<AdminFormulasSectionProps> = ({ onBack }) =
         throw new Error('Authentication required');
       }
       
-      // Get formulas first
+      // Get formulas directly without a join
       const { data: formulasData, error: formulasError } = await supabase
         .from('formulas')
         .select('*')
@@ -53,6 +53,7 @@ const AdminFormulasSection: React.FC<AdminFormulasSectionProps> = ({ onBack }) =
       let customerProfiles = {};
       
       if (uniqueIds.length > 0) {
+        // Use a direct, simple query to get profile info
         const { data: profilesData, error: profilesError } = await supabase
           .from('profiles')
           .select('id, name')

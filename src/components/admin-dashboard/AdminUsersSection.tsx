@@ -36,7 +36,7 @@ const AdminUsersSection: React.FC<AdminUsersSectionProps> = ({ onBack }) => {
         throw new Error('Authentication required');
       }
       
-      // We can now rely on RLS to filter results appropriately
+      // Using the get_admin_status function through RLS policies
       const { data, error } = await supabase
         .from('profiles')
         .select('*')

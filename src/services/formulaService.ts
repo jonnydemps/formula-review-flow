@@ -117,7 +117,7 @@ export const getCustomerFormulas = async (customerId: string) => {
 
 export const getAllFormulas = async () => {
   try {
-    // Get all formulas first
+    // Get all formulas first - using a simple query without joins
     const { data: formulasData, error: formulasError } = await supabase
       .from('formulas')
       .select('*')
@@ -128,7 +128,7 @@ export const getAllFormulas = async () => {
       throw formulasError;
     }
     
-    // If we have formulas and they have customer IDs, fetch customer profiles
+    // If we have formulas and they have customer IDs, fetch customer profiles separately
     if (formulasData && formulasData.length > 0) {
       const customerIds = formulasData
         .map(formula => formula.customer_id)
@@ -138,6 +138,7 @@ export const getAllFormulas = async () => {
         // Get unique customer IDs
         const uniqueCustomerIds = [...new Set(customerIds)];
         
+        // Simple query to avoid recursion
         const { data: profilesData, error: profilesError } = await supabase
           .from('profiles')
           .select('id, name')
