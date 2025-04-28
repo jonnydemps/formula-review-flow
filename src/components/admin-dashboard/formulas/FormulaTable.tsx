@@ -13,10 +13,9 @@ interface Formula {
   quote_amount: number | null;
   quote_requested_at: string | null;
   customer_id: string;
-  customer?: {
-    name: string;
-    email: string;
-  };
+  // Instead of nested customer object, we'll use optional fields
+  customer_name?: string; 
+  customer_email?: string;
 }
 
 interface FormulaTableProps {
@@ -52,7 +51,7 @@ const FormulaTable: React.FC<FormulaTableProps> = ({ formulas, onProvideQuote })
         <TableBody>
           {formulas.map((formula) => (
             <TableRow key={formula.id}>
-              <TableCell>{(formula.customer?.name) || 'Unknown User'}</TableCell>
+              <TableCell>{formula.customer_name || 'Unknown User'}</TableCell>
               <TableCell className="max-w-[200px] truncate">{formula.original_filename}</TableCell>
               <TableCell>
                 <StatusBadge status={getFormulaStatus(formula.status)} />

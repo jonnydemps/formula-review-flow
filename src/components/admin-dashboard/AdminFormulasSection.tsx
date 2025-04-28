@@ -29,8 +29,58 @@ const AdminFormulasSection: React.FC<AdminFormulasSectionProps> = ({ onBack }) =
         throw new Error('Authentication required');
       }
       
-      const data = await getAllFormulas();
-      setFormulas(data || []);
+      // Get formulas first
+      const { data: formulasData, error: formulasError } = await supabase
+        .from('formulas')
+        .select('*')
+        .order('created_at', { ascending: false });
+        
+      if (formulasError) throw formulasError;
+      
+      if (!formulasData) {
+        setFormulas([]);
+        return;
+      }
+      
+      // Then fetch customer profiles separately to avoid recursion
+      const customerIds = formulasData
+        .map(formula => formula.customer_id)
+        .filter(id => id !== null);
+        
+      const uniqueIds = [...new Set(customerIds)];
+      
+      // If we have customer IDs, fetch their profiles
+      let customerProfiles = {};
+      
+      if (uniqueIds.length > 0) {
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, name, email')
+          .in('id', uniqueIds);
+          
+        if (!profilesError && profilesData) {
+          // Create a lookup object
+          customerProfiles = profilesData.reduce((acc, profile) => {
+            acc[profile.id] = profile;
+            return acc;
+          }, {});
+        }
+      }
+      
+      // Combine formula data with customer data
+      const enrichedFormulas = formulasData.map(formula => {
+        if (formula.customer_id && customerProfiles[formula.customer_id]) {
+          return {
+            ...formula,
+            customer_name: customerProfiles[formula.customer_id].name,
+            customer_email: customerProfiles[formula.customer_id].email,
+          };
+        }
+        return formula;
+      });
+      
+      setFormulas(enrichedFormulas || []);
+      
     } catch (error: any) {
       console.error('Failed to load formulas:', error);
       setError(error.message || 'Failed to load formulas');

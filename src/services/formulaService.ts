@@ -117,23 +117,55 @@ export const getCustomerFormulas = async (customerId: string) => {
 
 export const getAllFormulas = async () => {
   try {
-    const { data, error } = await supabase
+    // Get all formulas first
+    const { data: formulasData, error: formulasError } = await supabase
       .from('formulas')
-      .select(`
-        *,
-        customer:profiles(
-          name,
-          email
-        )
-      `)
+      .select('*')
       .order('created_at', { ascending: false });
-
-    if (error) {
-      console.error('Error fetching all formulas:', error);
-      throw error;
+    
+    if (formulasError) {
+      console.error('Error fetching all formulas:', formulasError);
+      throw formulasError;
     }
-
-    return data || [];
+    
+    // If we have formulas and they have customer IDs, fetch customer profiles
+    if (formulasData && formulasData.length > 0) {
+      const customerIds = formulasData
+        .map(formula => formula.customer_id)
+        .filter(id => id !== null);
+      
+      if (customerIds.length > 0) {
+        // Get unique customer IDs
+        const uniqueCustomerIds = [...new Set(customerIds)];
+        
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, name, email')
+          .in('id', uniqueCustomerIds);
+        
+        // If profiles were successfully fetched, join them with the formula data
+        if (!profilesError && profilesData) {
+          const customerMap = profilesData.reduce((acc, profile) => {
+            acc[profile.id] = profile;
+            return acc;
+          }, {});
+          
+          // Add customer data to formulas
+          return formulasData.map(formula => {
+            const customer = formula.customer_id ? customerMap[formula.customer_id] : null;
+            
+            return {
+              ...formula,
+              customer_name: customer?.name || 'Unknown User',
+              customer_email: customer?.email || null
+            };
+          });
+        }
+      }
+    }
+    
+    // If we couldn't join with profiles, just return the formulas
+    return formulasData || [];
   } catch (error: any) {
     console.error('Error fetching all formulas:', error);
     throw new Error(`Failed to load formulas: ${error.message || 'Unknown error'}`);
