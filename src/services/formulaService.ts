@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { FormulaStatus } from '@/types/auth';
 
@@ -22,7 +23,7 @@ export const uploadFormulaFile = async (file: File, filePath: string) => {
 
     if (error) {
       console.error('Error uploading file:', error);
-      throw error;
+      throw new Error(`Storage error: ${error.message}`);
     }
 
     console.log('File uploaded successfully');
@@ -120,7 +121,7 @@ export const getAllFormulas = async () => {
       .from('formulas')
       .select(`
         *,
-        customer:profiles!formulas_customer_id_fkey (
+        customer:profiles(
           name,
           email
         )

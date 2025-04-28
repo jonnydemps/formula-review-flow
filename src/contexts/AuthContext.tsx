@@ -18,6 +18,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Set up auth state listener FIRST to prevent missing auth events
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('Auth state changed:', event, session?.user?.id);
       
@@ -33,15 +34,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'Admin'
             };
             setUser(adminUser);
-            navigateBasedOnRole(navigate, adminUser);
-            setIsLoading(false);
+            
+            // Use setTimeout to prevent potential auth state deadlocks
+            setTimeout(() => {
+              navigateBasedOnRole(navigate, adminUser);
+              setIsLoading(false);
+            }, 0);
             return;
           }
           
           // Otherwise, use the standard profile fetch
           const userData = await fetchUserProfile(session.user);
           setUser(userData);
-          navigateBasedOnRole(navigate, userData);
+          
+          // Use setTimeout to prevent potential auth state deadlocks
+          setTimeout(() => {
+            navigateBasedOnRole(navigate, userData);
+            setIsLoading(false);
+          }, 0);
         } catch (error) {
           console.error('Error in fetchUserProfile:', error);
           toast.error('Failed to load user profile');
@@ -68,14 +78,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               };
               setUser(adminUser);
               navigateBasedOnRole(navigate, adminUser);
-              setIsLoading(false);
-              return;
+            } else {
+              await supabase.auth.signOut();
+              setUser(null);
             }
-            
-            await supabase.auth.signOut();
-            setUser(null);
           }
-        } finally {
           setIsLoading(false);
         }
       } else if (event === 'SIGNED_OUT') {
@@ -85,6 +92,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     });
 
+    // THEN check for existing session
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
@@ -99,15 +107,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'Admin'
             };
             setUser(adminUser);
-            navigateBasedOnRole(navigate, adminUser);
-            setIsLoading(false);
+            setTimeout(() => {
+              navigateBasedOnRole(navigate, adminUser);
+              setIsLoading(false);
+            }, 0);
             return;
           }
           
           // Otherwise use standard profile fetch
           const userData = await fetchUserProfile(session.user);
           setUser(userData);
-          navigateBasedOnRole(navigate, userData);
+          setTimeout(() => {
+            navigateBasedOnRole(navigate, userData);
+            setIsLoading(false);
+          }, 0);
         } catch (error) {
           console.error('Error in checkSession:', error);
           
@@ -134,7 +147,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setUser(adminUser);
             navigateBasedOnRole(navigate, adminUser);
           }
-        } finally {
           setIsLoading(false);
         }
       } else {
@@ -161,8 +173,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(true);
     try {
       await signUp(email, password, role, name);
-      
-      // Don't try to auto-sign in after signup - this can cause issues with email confirmation
+      toast.success('Account created successfully! You can now sign in.');
     } finally {
       setIsLoading(false);
     }

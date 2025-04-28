@@ -30,44 +30,22 @@ export const fetchUserProfile = async (authUser: any): Promise<User> => {
     if (profileError) {
       console.error('Error fetching profile:', profileError);
       // Return default profile instead of throwing
-      return {
-        id: authUser.id,
-        email: authUser.email || '',
-        role: 'customer' as UserRole,
-        name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'User'
-      };
+      return createDefaultProfile(authUser);
     }
 
     // If no profile exists, create one
     if (!profileData) {
       console.log('No profile found, creating a default profile');
-      const defaultRole: UserRole = 'customer';
       
-      const { error: insertError } = await supabase
-        .from('profiles')
-        .insert({
-          id: authUser.id,
-          name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'User',
-          role: defaultRole
-        });
-
-      if (insertError) {
-        console.error('Error creating profile:', insertError);
-      }
-
-      return {
-        id: authUser.id,
-        email: authUser.email || '',
-        role: defaultRole,
-        name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'User'
-      };
+      const createResult = await createUserProfile(authUser);
+      return createResult;
     }
 
     return {
       id: authUser.id,
       email: authUser.email || '',
       role: profileData.role as UserRole,
-      name: profileData.name || authUser.email?.split('@')[0] || 'User'
+      name: profileData.name || authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'User'
     };
   } catch (error: any) {
     console.error('Profile service error:', error);
@@ -83,11 +61,48 @@ export const fetchUserProfile = async (authUser: any): Promise<User> => {
     }
     
     // Return default user profile instead of throwing
-    return {
-      id: authUser.id,
-      email: authUser.email || '',
-      role: 'customer' as UserRole,
-      name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'User'
-    };
+    return createDefaultProfile(authUser);
   }
+};
+
+const createDefaultProfile = (authUser: any): User => {
+  const defaultRole: UserRole = 'customer';
+  const name = authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'User';
+
+  return {
+    id: authUser.id,
+    email: authUser.email || '',
+    role: defaultRole,
+    name
+  };
+};
+
+const createUserProfile = async (authUser: any): Promise<User> => {
+  const defaultRole: UserRole = 'customer';
+  const name = authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'User';
+  
+  try {
+    const { error: insertError } = await supabase
+      .from('profiles')
+      .insert({
+        id: authUser.id,
+        name: name,
+        role: defaultRole
+      });
+
+    if (insertError) {
+      console.error('Error creating profile:', insertError);
+      // Fall back to default profile
+    }
+  } catch (error) {
+    console.error('Error creating user profile:', error);
+    // Continue with default profile
+  }
+
+  return {
+    id: authUser.id,
+    email: authUser.email || '',
+    role: defaultRole,
+    name: name
+  };
 };

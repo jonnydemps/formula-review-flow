@@ -2,10 +2,8 @@
 import React from 'react';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
 import StatusBadge from '@/components/StatusBadge';
-import { Button } from '@/components/ui/button';
-import { Download } from 'lucide-react';
-import { toast } from 'sonner';
 import { FormulaStatus } from '@/types/auth';
+import FormulaActions from './FormulaActions';
 
 interface Formula {
   id: string;
