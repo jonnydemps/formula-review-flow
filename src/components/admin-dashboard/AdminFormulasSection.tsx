@@ -4,7 +4,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { getAllFormulas } from '@/services/formulaService';
 import { supabase } from '@/integrations/supabase/client';
 import FormulaTable from './formulas/FormulaTable';
 import FormulaHeader from './formulas/FormulaHeader';
@@ -23,13 +22,7 @@ const AdminFormulasSection: React.FC<AdminFormulasSectionProps> = ({ onBack }) =
       setLoading(true);
       setError(null);
       
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError || !sessionData.session) {
-        throw new Error('Authentication required');
-      }
-      
-      // Get formulas directly without a join
+      // Simple approach - just get formulas without any joins
       const { data: formulasData, error: formulasError } = await supabase
         .from('formulas')
         .select('*')
@@ -37,50 +30,13 @@ const AdminFormulasSection: React.FC<AdminFormulasSectionProps> = ({ onBack }) =
         
       if (formulasError) throw formulasError;
       
+      // Return empty array if no data
       if (!formulasData) {
         setFormulas([]);
         return;
       }
       
-      // Then fetch customer profiles separately to avoid recursion
-      const customerIds = formulasData
-        .map(formula => formula.customer_id)
-        .filter(id => id !== null);
-        
-      const uniqueIds = [...new Set(customerIds)];
-      
-      // If we have customer IDs, fetch their profiles
-      let customerProfiles = {};
-      
-      if (uniqueIds.length > 0) {
-        // Use a direct, simple query to get profile info
-        const { data: profilesData, error: profilesError } = await supabase
-          .from('profiles')
-          .select('id, name')
-          .in('id', uniqueIds);
-          
-        if (!profilesError && profilesData) {
-          // Create a lookup object
-          customerProfiles = profilesData.reduce((acc, profile) => {
-            acc[profile.id] = profile;
-            return acc;
-          }, {});
-        }
-      }
-      
-      // Combine formula data with customer data
-      const enrichedFormulas = formulasData.map(formula => {
-        if (formula.customer_id && customerProfiles[formula.customer_id]) {
-          return {
-            ...formula,
-            customer_name: customerProfiles[formula.customer_id].name,
-            customer_email: null // We don't have email in profiles table
-          };
-        }
-        return formula;
-      });
-      
-      setFormulas(enrichedFormulas || []);
+      setFormulas(formulasData || []);
       
     } catch (error: any) {
       console.error('Failed to load formulas:', error);
