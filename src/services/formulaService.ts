@@ -140,7 +140,7 @@ export const getAllFormulas = async () => {
         
         const { data: profilesData, error: profilesError } = await supabase
           .from('profiles')
-          .select('id, name, email')
+          .select('id, name')
           .in('id', uniqueCustomerIds);
         
         // If profiles were successfully fetched, join them with the formula data
@@ -157,7 +157,7 @@ export const getAllFormulas = async () => {
             return {
               ...formula,
               customer_name: customer?.name || 'Unknown User',
-              customer_email: customer?.email || null
+              customer_email: null // Email is not in profiles table
             };
           });
         }

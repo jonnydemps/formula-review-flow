@@ -55,7 +55,7 @@ const AdminFormulasSection: React.FC<AdminFormulasSectionProps> = ({ onBack }) =
       if (uniqueIds.length > 0) {
         const { data: profilesData, error: profilesError } = await supabase
           .from('profiles')
-          .select('id, name, email')
+          .select('id, name')
           .in('id', uniqueIds);
           
         if (!profilesError && profilesData) {
@@ -73,7 +73,7 @@ const AdminFormulasSection: React.FC<AdminFormulasSectionProps> = ({ onBack }) =
           return {
             ...formula,
             customer_name: customerProfiles[formula.customer_id].name,
-            customer_email: customerProfiles[formula.customer_id].email,
+            customer_email: null // We don't have email in profiles table
           };
         }
         return formula;
