@@ -33,7 +33,7 @@ const CustomerDashboard: React.FC = () => {
     const checkStorageBucket = async () => {
       try {
         const { data, error } = await supabase.storage.getBucket('formula_files');
-        if (error && error.code === 'PGRST116') {
+        if (error) {
           // Bucket doesn't exist, create it
           await supabase.storage.createBucket('formula_files', {
             public: false
