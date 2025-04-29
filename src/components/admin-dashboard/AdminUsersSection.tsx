@@ -13,6 +13,7 @@ interface Profile {
   name: string | null;
   role: string;
   created_at: string | null;
+  email?: string | null;
 }
 
 interface AdminUsersSectionProps {
@@ -24,52 +25,7 @@ const AdminUsersSection: React.FC<AdminUsersSectionProps> = ({ onBack }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fallback method to check if user is admin directly
-  const fetchProfilesDirectly = async () => {
-    try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      
-      if (!sessionData?.session?.user?.email) {
-        throw new Error('Authentication required');
-      }
-      
-      // For simplicity, just check if the current user's email matches admin email
-      // This is a temporary solution until RLS policies are fixed
-      if (sessionData.session.user.email === 'john-dempsey@hotmail.co.uk') {
-        // Admin user - fetch all users from auth schema
-        const { data: adminData } = await supabase.auth.admin.listUsers();
-        
-        if (adminData?.users) {
-          // Map auth users to simplified profile format
-          const mappedProfiles = adminData.users.map(user => ({
-            id: user.id,
-            name: user.user_metadata?.name || user.email?.split('@')[0] || 'Unnamed User',
-            role: user.user_metadata?.role || 'customer',
-            created_at: user.created_at
-          }));
-          
-          setProfiles(mappedProfiles);
-        } else {
-          setProfiles([]);
-        }
-      } else {
-        // Non-admin users see only their own profile
-        setProfiles([{
-          id: sessionData.session.user.id,
-          name: sessionData.session.user.user_metadata?.name || sessionData.session.user.email?.split('@')[0] || 'Unnamed User',
-          role: sessionData.session.user.user_metadata?.role || 'customer',
-          created_at: sessionData.session.user.created_at
-        }]);
-      }
-    } catch (error: any) {
-      console.error('Failed to load user profiles directly:', error);
-      setError(error.message || 'Failed to load profiles');
-      toast.error(`Failed to load user profiles: ${error.message}`);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // With RLS disabled, try direct approach first, then fallback if needed
   const fetchProfiles = async () => {
     try {
       setLoading(true);
@@ -81,25 +37,45 @@ const AdminUsersSection: React.FC<AdminUsersSectionProps> = ({ onBack }) => {
       if (sessionError || !sessionData.session) {
         throw new Error('Authentication required');
       }
-      
-      // Try using RLS policies first
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('Error fetching profiles:', error);
-        // If RLS policy fails, fall back to direct method
-        await fetchProfilesDirectly();
-        return;
+      // Direct approach now that RLS is disabled
+      if (sessionData.session.user.email === 'john-dempsey@hotmail.co.uk') {
+        // First try fetching all profiles directly
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          console.error('Error fetching profiles directly:', error);
+          throw error;
+        }
+
+        // Enrich with email data if possible
+        const enrichedProfiles = data.map(profile => ({
+          ...profile,
+          email: null // We don't have emails in profiles table
+        }));
+
+        setProfiles(enrichedProfiles || []);
+      } else {
+        // Non-admin users see only their own profile from the session
+        const profile = {
+          id: sessionData.session.user.id,
+          name: sessionData.session.user.user_metadata?.name || sessionData.session.user.email?.split('@')[0] || 'Unnamed User',
+          role: 'customer',
+          created_at: sessionData.session.user.created_at,
+          email: sessionData.session.user.email
+        };
+        
+        setProfiles([profile]);
       }
-
-      setProfiles(data || []);
     } catch (error: any) {
       console.error('Failed to load user profiles:', error);
-      // Fall back to direct method on any error
-      await fetchProfilesDirectly();
+      setError(error.message || 'Failed to load profiles');
+      toast.error(`Failed to load user profiles: ${error.message}`);
+    } finally {
+      setLoading(false);
     }
   };
 

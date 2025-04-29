@@ -45,6 +45,7 @@ export const createFormula = async (customerId: string, filePath: string, origin
       throw new Error('Authentication required to upload formulas');
     }
     
+    // Since RLS is disabled, we can insert directly
     const { data: formulaData, error: formulaError } = await supabase
       .from('formulas')
       .insert({
@@ -117,56 +118,18 @@ export const getCustomerFormulas = async (customerId: string) => {
 
 export const getAllFormulas = async () => {
   try {
-    // Get all formulas first - using a simple query without joins
-    const { data: formulasData, error: formulasError } = await supabase
+    // Now that RLS is disabled, we can query directly without joins
+    const { data, error } = await supabase
       .from('formulas')
       .select('*')
       .order('created_at', { ascending: false });
     
-    if (formulasError) {
-      console.error('Error fetching all formulas:', formulasError);
-      throw formulasError;
+    if (error) {
+      console.error('Error fetching all formulas:', error);
+      throw error;
     }
     
-    // If we have formulas and they have customer IDs, fetch customer profiles separately
-    if (formulasData && formulasData.length > 0) {
-      const customerIds = formulasData
-        .map(formula => formula.customer_id)
-        .filter(id => id !== null);
-      
-      if (customerIds.length > 0) {
-        // Get unique customer IDs
-        const uniqueCustomerIds = [...new Set(customerIds)];
-        
-        // Simple query to avoid recursion
-        const { data: profilesData, error: profilesError } = await supabase
-          .from('profiles')
-          .select('id, name')
-          .in('id', uniqueCustomerIds);
-        
-        // If profiles were successfully fetched, join them with the formula data
-        if (!profilesError && profilesData) {
-          const customerMap = profilesData.reduce((acc, profile) => {
-            acc[profile.id] = profile;
-            return acc;
-          }, {});
-          
-          // Add customer data to formulas
-          return formulasData.map(formula => {
-            const customer = formula.customer_id ? customerMap[formula.customer_id] : null;
-            
-            return {
-              ...formula,
-              customer_name: customer?.name || 'Unknown User',
-              customer_email: null // Email is not in profiles table
-            };
-          });
-        }
-      }
-    }
-    
-    // If we couldn't join with profiles, just return the formulas
-    return formulasData || [];
+    return data || [];
   } catch (error: any) {
     console.error('Error fetching all formulas:', error);
     throw new Error(`Failed to load formulas: ${error.message || 'Unknown error'}`);

@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -174,6 +175,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       await signUp(email, password, role, name);
       toast.success('Account created successfully! You can now sign in.');
+      navigate('/sign-in');
     } finally {
       setIsLoading(false);
     }

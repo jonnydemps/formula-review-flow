@@ -30,7 +30,7 @@ const CustomerDashboard: React.FC = () => {
     }
   }, [user, navigate]);
 
-  // Custom fetch function to get customer formulas
+  // Custom fetch function to get customer formulas - simplified now that RLS is disabled
   const getCustomerFormulas = async () => {
     if (!user) return [];
     
@@ -42,6 +42,7 @@ const CustomerDashboard: React.FC = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
+      console.log('Customer formulas:', data);
       return data || [];
     } catch (error) {
       console.error('Error fetching formulas:', error);

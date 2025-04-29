@@ -22,7 +22,7 @@ const AdminFormulasSection: React.FC<AdminFormulasSectionProps> = ({ onBack }) =
       setLoading(true);
       setError(null);
       
-      // Simple approach - just get formulas without any joins
+      // Direct query with no joins to avoid recursive RLS issues
       const { data: formulasData, error: formulasError } = await supabase
         .from('formulas')
         .select('*')
@@ -30,14 +30,34 @@ const AdminFormulasSection: React.FC<AdminFormulasSectionProps> = ({ onBack }) =
         
       if (formulasError) throw formulasError;
       
-      // Return empty array if no data
-      if (!formulasData) {
-        setFormulas([]);
-        return;
+      console.log('Fetched formulas:', formulasData);
+      
+      // If we have formulas and they have customer IDs, try to enrich with user data where possible
+      if (formulasData && formulasData.length > 0) {
+        // Get user session data to check for auth
+        const { data: sessionData } = await supabase.auth.getSession();
+        
+        if (sessionData?.session?.user?.email === 'john-dempsey@hotmail.co.uk') {
+          // For the admin account, try to get auth users directly
+          const { data: authData } = await supabase.auth.getUser();
+          console.log('Admin auth data:', authData);
+          
+          // Attempt to enrich with customer data if possible
+          const enrichedFormulas = formulasData.map(formula => {
+            return {
+              ...formula,
+              customer_name: formula.customer_id || 'Unknown User'
+            };
+          });
+          
+          setFormulas(enrichedFormulas);
+        } else {
+          // Non-admin users
+          setFormulas(formulasData);
+        }
+      } else {
+        setFormulas(formulasData || []);
       }
-      
-      setFormulas(formulasData || []);
-      
     } catch (error: any) {
       console.error('Failed to load formulas:', error);
       setError(error.message || 'Failed to load formulas');
