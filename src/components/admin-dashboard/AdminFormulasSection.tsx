@@ -124,6 +124,7 @@ const AdminFormulasSection: React.FC<AdminFormulasSectionProps> = ({ onBack }) =
             <FormulaTable 
               formulas={formulas} 
               onProvideQuote={provideQuote}
+              onRefresh={handleRefresh}
             />
           )}
         </div>

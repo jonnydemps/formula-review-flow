@@ -7,7 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import StatusBadge from '@/components/StatusBadge';
 import { FormulaStatus } from '@/types/auth';
-import { FileText } from 'lucide-react';
+import { FileText, Download } from 'lucide-react';
 import FormulaDetailsDialog from '@/components/formula-details/FormulaDetailsDialog';
 
 interface FormulaItemProps {
@@ -30,6 +30,7 @@ const FormulaItem: React.FC<FormulaItemProps> = ({
   const navigate = useNavigate();
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const [formulaDetails, setFormulaDetails] = useState<any | null>(null);
+  const [reportUrl, setReportUrl] = useState<string | null>(null);
 
   // Convert the string status to FormulaStatus for the StatusBadge
   const getFormulaStatus = (status: string): FormulaStatus => {
@@ -72,19 +73,62 @@ const FormulaItem: React.FC<FormulaItemProps> = ({
 
   const handleViewDetails = async () => {
     try {
-      const { data, error } = await supabase
+      // Get formula details
+      const { data: formulaData, error: formulaError } = await supabase
         .from('formulas')
         .select('*')
         .eq('id', id)
         .single();
       
-      if (error) throw error;
+      if (formulaError) throw formulaError;
       
-      setFormulaDetails(data);
+      // If formula is completed, get report URL from reviews table
+      if (formulaData.status === 'completed') {
+        const { data: reviewData, error: reviewError } = await supabase
+          .from('reviews')
+          .select('report_url')
+          .eq('formula_id', id)
+          .maybeSingle();
+          
+        if (!reviewError && reviewData?.report_url) {
+          setReportUrl(reviewData.report_url);
+        }
+      }
+      
+      setFormulaDetails(formulaData);
       setIsDetailsDialogOpen(true);
     } catch (err: any) {
       console.error('Error fetching formula details:', err);
       toast.error('Could not load formula details');
+    }
+  };
+  
+  const handleDownloadReport = async () => {
+    try {
+      // Get report URL from reviews table
+      const { data, error } = await supabase
+        .from('reviews')
+        .select('report_url')
+        .eq('formula_id', id)
+        .maybeSingle();
+        
+      if (error) throw error;
+      
+      if (data?.report_url) {
+        // In a real app, this would download the actual report from storage
+        // For now, we'll show a success message
+        toast.success('Downloading report...');
+        
+        // Mock download action
+        setTimeout(() => {
+          toast.info('This is a simulated download. In production, this would download a real PDF report.');
+        }, 2000);
+      } else {
+        toast.error('Report not found');
+      }
+    } catch (err: any) {
+      console.error('Error downloading report:', err);
+      toast.error('Could not download report');
     }
   };
 
@@ -132,7 +176,8 @@ const FormulaItem: React.FC<FormulaItemProps> = ({
         )}
         
         {status === 'completed' && (
-          <Button size="sm" variant="outline">
+          <Button size="sm" onClick={handleDownloadReport}>
+            <Download className="h-4 w-4 mr-1" />
             Download Report
           </Button>
         )}

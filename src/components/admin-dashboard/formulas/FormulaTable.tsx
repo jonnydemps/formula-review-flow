@@ -1,71 +1,52 @@
 
 import React from 'react';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
-import StatusBadge from '@/components/StatusBadge';
-import { FormulaStatus } from '@/types/auth';
 import FormulaActions from './FormulaActions';
-
-interface Formula {
-  id: string;
-  original_filename: string;
-  status: string;
-  created_at: string;
-  quote_amount: number | null;
-  quote_requested_at: string | null;
-  customer_id: string;
-  // Instead of nested customer object, we'll use optional fields
-  customer_name?: string; 
-  customer_email?: string;
-}
+import StatusBadge from '@/components/StatusBadge';
 
 interface FormulaTableProps {
-  formulas: Formula[];
-  onProvideQuote: (id: string, amount: number) => Promise<void>;
+  formulas: any[];
+  onProvideQuote: (id: string, amount: number) => void;
+  onRefresh?: () => void;
 }
 
-const FormulaTable: React.FC<FormulaTableProps> = ({ formulas, onProvideQuote }) => {
-  const getFormulaStatus = (status: string): FormulaStatus => {
-    switch(status) {
-      case 'pending_review': return 'pending_review';
-      case 'quote_requested': return 'quote_requested';
-      case 'quote_provided': return 'quote_provided';
-      case 'paid': return 'paid';
-      case 'completed': return 'completed';
-      default: return 'pending_review';
-    }
-  };
-
+const FormulaTable: React.FC<FormulaTableProps> = ({ formulas, onProvideQuote, onRefresh }) => {
   return (
     <div className="overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Customer</TableHead>
-            <TableHead>File Name</TableHead>
+            <TableHead>Formula</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead>Submitted</TableHead>
-            <TableHead>Quote</TableHead>
+            <TableHead>Customer</TableHead>
+            <TableHead>Date</TableHead>
+            <TableHead className="text-right">Quote</TableHead>
             <TableHead>Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {formulas.map((formula) => (
-            <TableRow key={formula.id}>
-              <TableCell>{formula.customer_name || 'Unknown User'}</TableCell>
-              <TableCell className="max-w-[200px] truncate">{formula.original_filename}</TableCell>
-              <TableCell>
-                <StatusBadge status={getFormulaStatus(formula.status)} />
+            <TableRow key={formula.id} className="hover:bg-muted/50">
+              <TableCell className="font-medium truncate max-w-[200px]">
+                {formula.original_filename || 'Unnamed Formula'}
               </TableCell>
               <TableCell>
-                {formula.created_at ? new Date(formula.created_at).toLocaleDateString() : 'Unknown'}
+                <StatusBadge status={formula.status} />
+              </TableCell>
+              <TableCell className="truncate max-w-[150px]">
+                {formula.customer_name || formula.customer_id || 'Unknown'}
               </TableCell>
               <TableCell>
-                {formula.quote_amount ? `$${formula.quote_amount}` : '-'}
+                {new Date(formula.created_at).toLocaleDateString()}
+              </TableCell>
+              <TableCell className="text-right">
+                {formula.quote_amount ? `$${formula.quote_amount}` : '–'}
               </TableCell>
               <TableCell>
-                <FormulaActions
-                  formula={formula}
-                  onProvideQuote={onProvideQuote}
+                <FormulaActions 
+                  formula={formula} 
+                  onProvideQuote={onProvideQuote} 
+                  onRefresh={onRefresh}
                 />
               </TableCell>
             </TableRow>
