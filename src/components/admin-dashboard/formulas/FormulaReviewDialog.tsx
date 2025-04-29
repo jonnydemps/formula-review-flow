@@ -35,9 +35,10 @@ import { AlertTriangle, Check, X, Plus, FileText, Save } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import StatusBadge from '@/components/StatusBadge';
 import { toast } from 'sonner';
-import { saveReview, generateReport, Ingredient } from '@/services/reviewService';
+import { saveReview, generateReport, Ingredient, ReviewData, ensureReviewDataFormat } from '@/services/reviewService';
 import { getFormulaFileUrl } from '@/services/formulaService';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
 // Define validation schema
 const reviewFormSchema = z.object({
@@ -112,13 +113,9 @@ const FormulaReviewDialog: React.FC<FormulaReviewDialogProps> = ({
           if (reviewsData) {
             setExistingReview(reviewsData);
             
-            // Populate form with existing review data
-            form.reset({
-              reviewNotes: reviewsData.review_data.reviewNotes || '',
-              ingredients: reviewsData.review_data.ingredients || [
-                { id: '1', name: '', percentage: '', compliant: true, notes: '' }
-              ]
-            });
+            // Ensure review data is properly formatted and set form values
+            const formattedData = ensureReviewDataFormat(reviewsData.review_data);
+            form.reset(formattedData);
           }
         } catch (err) {
           console.error('Error fetching existing review:', err);
@@ -165,7 +162,13 @@ const FormulaReviewDialog: React.FC<FormulaReviewDialogProps> = ({
     
     setIsSubmitting(true);
     try {
-      await saveReview(formula.id, user.id, data);
+      // Ensure the data conforms to ReviewData type
+      const reviewData: ReviewData = {
+        reviewNotes: data.reviewNotes,
+        ingredients: data.ingredients
+      };
+      
+      await saveReview(formula.id, user.id, reviewData);
       toast.success('Formula review saved successfully');
       onReviewComplete();
       onClose();
@@ -184,7 +187,14 @@ const FormulaReviewDialog: React.FC<FormulaReviewDialogProps> = ({
     try {
       // First save current review data
       const currentData = form.getValues();
-      await saveReview(formula.id, user.id, currentData);
+      
+      // Ensure the data conforms to ReviewData type
+      const reviewData: ReviewData = {
+        reviewNotes: currentData.reviewNotes,
+        ingredients: currentData.ingredients
+      };
+      
+      await saveReview(formula.id, user.id, reviewData);
       
       // Then generate report
       await generateReport(formula.id, user.id);
@@ -200,9 +210,6 @@ const FormulaReviewDialog: React.FC<FormulaReviewDialogProps> = ({
   };
 
   if (!formula) return null;
-
-  // Import supabase here to avoid circular dependency issues
-  const { supabase } = require('@/integrations/supabase/client');
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>

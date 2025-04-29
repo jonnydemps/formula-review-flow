@@ -53,6 +53,22 @@ export const getReviewForFormula = async (formulaId: string) => {
   }
 };
 
+// Ensure review data conforms to the expected type
+export const ensureReviewDataFormat = (data: any): ReviewData => {
+  return {
+    reviewNotes: data?.reviewNotes || '',
+    ingredients: Array.isArray(data?.ingredients) 
+      ? data.ingredients.map((ing: any) => ({
+          id: ing?.id || String(Date.now()),
+          name: ing?.name || '',
+          percentage: ing?.percentage,
+          compliant: typeof ing?.compliant === 'boolean' ? ing.compliant : true,
+          notes: ing?.notes || ''
+        }))
+      : [{ id: '1', name: '', percentage: '', compliant: true, notes: '' }]
+  };
+};
+
 // Generate and save report URL
 export const generateReport = async (formulaId: string, specialistId: string) => {
   try {
