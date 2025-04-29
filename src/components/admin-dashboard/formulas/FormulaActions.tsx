@@ -13,6 +13,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { FormulaStatus } from '@/types/auth';
+import FormulaDetailsDialog from '@/components/formula-details/FormulaDetailsDialog';
 
 interface Formula {
   id: string;
@@ -35,6 +36,7 @@ const FormulaActions: React.FC<FormulaActionsProps> = ({
   const [isQuoteDialogOpen, setIsQuoteDialogOpen] = useState(false);
   const [quoteAmount, setQuoteAmount] = useState(formula.quote_amount || 100);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
 
   const handleProvideQuote = async () => {
     if (quoteAmount <= 0) {
@@ -90,7 +92,7 @@ const FormulaActions: React.FC<FormulaActionsProps> = ({
       <Button 
         size="sm" 
         variant="outline"
-        onClick={() => toast.info("Formula details view coming soon")}
+        onClick={() => setIsDetailsDialogOpen(true)}
       >
         <FileText className="h-4 w-4 mr-1" />
         View Details
@@ -136,6 +138,12 @@ const FormulaActions: React.FC<FormulaActionsProps> = ({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <FormulaDetailsDialog
+        isOpen={isDetailsDialogOpen}
+        onClose={() => setIsDetailsDialogOpen(false)}
+        formula={formula}
+      />
     </div>
   );
 };

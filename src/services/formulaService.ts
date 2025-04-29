@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { FormulaStatus } from '@/types/auth';
 
@@ -31,6 +30,23 @@ export const uploadFormulaFile = async (file: File, filePath: string) => {
   } catch (error: any) {
     console.error('File upload error:', error);
     throw new Error(`Upload failed: ${error.message || 'Unknown error'}`);
+  }
+};
+
+export const getFormulaFileUrl = async (filePath: string): Promise<string> => {
+  try {
+    const { data, error } = await supabase.storage
+      .from('formula_files')
+      .createSignedUrl(filePath, 3600); // 1 hour expiry
+
+    if (error) {
+      throw error;
+    }
+
+    return data.signedUrl;
+  } catch (error: any) {
+    console.error('Error getting file URL:', error);
+    throw new Error(`Failed to get file URL: ${error.message || 'Unknown error'}`);
   }
 };
 

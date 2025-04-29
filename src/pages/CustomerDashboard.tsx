@@ -28,6 +28,24 @@ const CustomerDashboard: React.FC = () => {
     } else if (user.role !== 'customer') {
       navigate('/specialist-dashboard');
     }
+    
+    // Check if the formula_files bucket exists, create if it doesn't
+    const checkStorageBucket = async () => {
+      try {
+        const { data, error } = await supabase.storage.getBucket('formula_files');
+        if (error && error.code === 'PGRST116') {
+          // Bucket doesn't exist, create it
+          await supabase.storage.createBucket('formula_files', {
+            public: false
+          });
+          console.log('Created formula_files storage bucket');
+        }
+      } catch (error) {
+        console.error('Error checking/creating storage bucket:', error);
+      }
+    };
+    
+    checkStorageBucket();
   }, [user, navigate]);
 
   // Custom fetch function to get customer formulas - simplified now that RLS is disabled

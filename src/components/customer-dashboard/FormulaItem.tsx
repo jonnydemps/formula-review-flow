@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
@@ -7,6 +7,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import StatusBadge from '@/components/StatusBadge';
 import { FormulaStatus } from '@/types/auth';
+import { FileText } from 'lucide-react';
+import FormulaDetailsDialog from '@/components/formula-details/FormulaDetailsDialog';
 
 interface FormulaItemProps {
   id: string;
@@ -26,6 +28,8 @@ const FormulaItem: React.FC<FormulaItemProps> = ({
   onAcceptQuote
 }) => {
   const navigate = useNavigate();
+  const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
+  const [formulaDetails, setFormulaDetails] = useState<any | null>(null);
 
   // Convert the string status to FormulaStatus for the StatusBadge
   const getFormulaStatus = (status: string): FormulaStatus => {
@@ -66,6 +70,24 @@ const FormulaItem: React.FC<FormulaItemProps> = ({
     }
   };
 
+  const handleViewDetails = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('formulas')
+        .select('*')
+        .eq('id', id)
+        .single();
+      
+      if (error) throw error;
+      
+      setFormulaDetails(data);
+      setIsDetailsDialogOpen(true);
+    } catch (err: any) {
+      console.error('Error fetching formula details:', err);
+      toast.error('Could not load formula details');
+    }
+  };
+
   return (
     <Card className="p-4 mb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
       <div className="flex-1">
@@ -81,7 +103,16 @@ const FormulaItem: React.FC<FormulaItemProps> = ({
         </div>
       </div>
       
-      <div>
+      <div className="flex flex-col sm:flex-row gap-2">
+        <Button 
+          size="sm" 
+          variant="outline"
+          onClick={handleViewDetails}
+        >
+          <FileText className="h-4 w-4 mr-1" />
+          View Details
+        </Button>
+
         {status === 'pending_review' && (
           <Button size="sm" onClick={requestQuote}>Request Quote</Button>
         )}
@@ -106,6 +137,12 @@ const FormulaItem: React.FC<FormulaItemProps> = ({
           </Button>
         )}
       </div>
+
+      <FormulaDetailsDialog
+        isOpen={isDetailsDialogOpen}
+        onClose={() => setIsDetailsDialogOpen(false)}
+        formula={formulaDetails}
+      />
     </Card>
   );
 };
