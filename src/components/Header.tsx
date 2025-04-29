@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -35,6 +36,8 @@ const Header: React.FC = () => {
     return user.role === 'admin' ? <Shield className="h-4 w-4" /> : <FileUp className="h-4 w-4" />;
   };
 
+  console.log("Header rendering, user:", user?.email, "role:", user?.role);
+
   return (
     <header className="bg-white shadow-sm sticky top-0 z-50">
       <div className="ra-container flex justify-between items-center py-4">
@@ -63,7 +66,7 @@ const Header: React.FC = () => {
                 <span className="text-sm text-gray-500">
                   {user.name || user.email} ({user.role})
                 </span>
-                <Button variant="outline" onClick={signOut} size="sm">
+                <Button variant="outline" onClick={() => signOut()} size="sm">
                   Sign Out
                 </Button>
               </div>

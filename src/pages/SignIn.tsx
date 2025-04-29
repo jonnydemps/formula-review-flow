@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -15,7 +16,9 @@ const SignIn: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   
+  // Redirect if already logged in
   if (user) {
+    console.log("User already logged in, role:", user.role);
     if (user.role === 'admin') return <Navigate to="/admin-dashboard" />;
     return <Navigate to="/customer-dashboard" />;
   }
@@ -26,11 +29,11 @@ const SignIn: React.FC = () => {
     setIsSubmitting(true);
     
     try {
-      toast.info('Attempting to sign in...');
-      console.log('Signing in with:', email);
+      toast.info('Signing in...');
+      console.log('Sign-in form submitted for:', email);
       await signIn(email, password);
     } catch (err: any) {
-      console.error('Sign in page error:', err);
+      console.error('Sign in form error:', err);
       setError(err.message || 'Invalid email or password');
     } finally {
       setIsSubmitting(false);

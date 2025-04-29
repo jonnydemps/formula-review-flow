@@ -19,15 +19,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Set up auth state listener FIRST to prevent missing auth events
+    // Initialize auth listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('Auth state changed:', event, session?.user?.id);
       
       if (event === 'SIGNED_IN' && session?.user) {
         setIsLoading(true);
         try {
-          // Check for admin email first - fastest path
+          // Admin fast path
           if (ADMIN_EMAILS.includes(session.user.email || '')) {
+            console.log('Admin email detected');
             const adminUser = {
               id: session.user.id,
               email: session.user.email || '',
@@ -36,7 +37,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             };
             setUser(adminUser);
             
-            // Use setTimeout to prevent potential auth state deadlocks
+            // Use setTimeout to prevent auth state deadlocks
             setTimeout(() => {
               navigateBasedOnRole(navigate, adminUser);
               setIsLoading(false);
@@ -44,11 +45,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             return;
           }
           
-          // Otherwise, use the standard profile fetch
+          // Standard profile fetch
           const userData = await fetchUserProfile(session.user);
           setUser(userData);
+          console.log('User profile fetched:', userData);
           
-          // Use setTimeout to prevent potential auth state deadlocks
+          // Use setTimeout to prevent auth state deadlocks
           setTimeout(() => {
             navigateBasedOnRole(navigate, userData);
             setIsLoading(false);
@@ -57,7 +59,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           console.error('Error in fetchUserProfile:', error);
           toast.error('Failed to load user profile');
           
-          // Try to extract role from user metadata as fallback
+          // Fallback handling
           if (session.user.user_metadata?.role) {
             const fallbackUser = {
               id: session.user.id,
@@ -68,39 +70,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             
             setUser(fallbackUser);
             navigateBasedOnRole(navigate, fallbackUser);
-          } else {
+          } else if (ADMIN_EMAILS.includes(session.user.email || '')) {
             // Special case for admin emails
-            if (ADMIN_EMAILS.includes(session.user.email || '')) {
-              const adminUser = {
-                id: session.user.id,
-                email: session.user.email || '',
-                role: 'admin' as UserRole,
-                name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'Admin'
-              };
-              setUser(adminUser);
-              navigateBasedOnRole(navigate, adminUser);
-            } else {
-              await supabase.auth.signOut();
-              setUser(null);
-            }
-          }
-          setIsLoading(false);
-        }
-      } else if (event === 'SIGNED_OUT') {
-        setUser(null);
-        navigate('/');
-        setIsLoading(false);
-      }
-    });
-
-    // THEN check for existing session
-    const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        setIsLoading(true);
-        try {
-          // Check for admin email first - fastest path
-          if (ADMIN_EMAILS.includes(session.user.email || '')) {
             const adminUser = {
               id: session.user.id,
               email: session.user.email || '',
@@ -108,24 +79,71 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'Admin'
             };
             setUser(adminUser);
-            setTimeout(() => {
-              navigateBasedOnRole(navigate, adminUser);
-              setIsLoading(false);
-            }, 0);
-            return;
+            navigateBasedOnRole(navigate, adminUser);
+          } else {
+            // Default fallback - if all else fails, sign out
+            await supabase.auth.signOut();
+            setUser(null);
           }
-          
-          // Otherwise use standard profile fetch
+          setIsLoading(false);
+        }
+      } else if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
+        console.log('User signed out or deleted');
+        setUser(null);
+        navigate('/');
+        setIsLoading(false);
+      }
+    });
+
+    // Check for existing session
+    const checkSession = async () => {
+      try {
+        console.log('Checking for existing session');
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('Session check error:', error);
+          setIsLoading(false);
+          return;
+        }
+        
+        if (!session) {
+          console.log('No active session found');
+          setIsLoading(false);
+          return;
+        }
+        
+        console.log('Existing session found for user:', session.user.id);
+        
+        // Admin fast path
+        if (ADMIN_EMAILS.includes(session.user.email || '')) {
+          console.log('Admin email detected in session check');
+          const adminUser = {
+            id: session.user.id,
+            email: session.user.email || '',
+            role: 'admin' as UserRole,
+            name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'Admin'
+          };
+          setUser(adminUser);
+          setTimeout(() => {
+            navigateBasedOnRole(navigate, adminUser);
+            setIsLoading(false);
+          }, 0);
+          return;
+        }
+        
+        try {
+          // Standard profile fetch
           const userData = await fetchUserProfile(session.user);
           setUser(userData);
           setTimeout(() => {
             navigateBasedOnRole(navigate, userData);
             setIsLoading(false);
           }, 0);
-        } catch (error) {
-          console.error('Error in checkSession:', error);
+        } catch (profileError) {
+          console.error('Profile fetch error:', profileError);
           
-          // Try to extract role from user metadata as fallback
+          // Fallback handling
           if (session.user.user_metadata?.role) {
             const fallbackUser = {
               id: session.user.id,
@@ -133,12 +151,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               role: session.user.user_metadata.role as UserRole,
               name: session.user.user_metadata.name || session.user.email?.split('@')[0] || 'User'
             };
-            
             setUser(fallbackUser);
             navigateBasedOnRole(navigate, fallbackUser);
-          }
-          // Special case for admin emails
-          else if (ADMIN_EMAILS.includes(session.user.email || '')) {
+          } else if (ADMIN_EMAILS.includes(session.user.email || '')) {
+            // Admin fallback
             const adminUser = {
               id: session.user.id,
               email: session.user.email || '',
@@ -150,12 +166,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
           setIsLoading(false);
         }
-      } else {
+      } catch (error) {
+        console.error('Session check exception:', error);
         setIsLoading(false);
       }
     };
 
+    // Run session check
     checkSession();
+
+    // Cleanup subscription
     return () => {
       subscription.unsubscribe();
     };
@@ -164,7 +184,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const handleSignIn = async (email: string, password: string) => {
     setIsLoading(true);
     try {
+      console.log('Attempting sign in for:', email);
       await signIn(email, password);
+    } catch (error) {
+      console.error('Sign in handler error:', error);
     } finally {
       setIsLoading(false);
     }
@@ -176,6 +199,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await signUp(email, password, role, name);
       toast.success('Account created successfully! You can now sign in.');
       navigate('/sign-in');
+    } catch (error) {
+      console.error('Sign up handler error:', error);
     } finally {
       setIsLoading(false);
     }
@@ -183,10 +208,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const handleSignOut = async () => {
     try {
+      console.log('User signing out');
       await signOut();
       navigate('/');
     } catch (error) {
-      console.error('Error in handleSignOut:', error);
+      console.error('Sign out handler error:', error);
+      // Force clear user state on error
+      setUser(null);
+      navigate('/');
     }
   };
 
