@@ -87,8 +87,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
           setIsLoading(false);
         }
-      } else if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
-        console.log('User signed out or deleted');
+      } else if (event === 'SIGNED_OUT') {
+        // Fix: Remove the invalid 'USER_DELETED' check since it's not a valid event type
+        console.log('User signed out');
         setUser(null);
         navigate('/');
         setIsLoading(false);
