@@ -1,10 +1,29 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Eye, FileText, Check } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { FileText, DollarSign, Trash2 } from 'lucide-react';
+import FormulaReviewDialog from './FormulaReviewDialog';
+import { deleteFormula } from '@/services/formulaService';
 import { toast } from 'sonner';
-import FormulaDetailsDialog from '@/components/formula-details/FormulaDetailsDialog';
-import FormulaReviewDialog from '@/components/admin-dashboard/formulas/FormulaReviewDialog';
 
 interface FormulaActionsProps {
   formula: any;
@@ -12,35 +31,22 @@ interface FormulaActionsProps {
   onRefresh?: () => void;
 }
 
-const FormulaActions: React.FC<FormulaActionsProps> = ({
-  formula,
-  onProvideQuote,
-  onRefresh
-}) => {
-  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-  const [isReviewOpen, setIsReviewOpen] = useState(false);
-  
-  // Quote state
-  const [isProvidingQuote, setIsProvidingQuote] = useState(false);
+const FormulaActions: React.FC<FormulaActionsProps> = ({ formula, onProvideQuote, onRefresh }) => {
+  const [isQuoteDialogOpen, setIsQuoteDialogOpen] = useState(false);
   const [quoteAmount, setQuoteAmount] = useState<string>('');
-  
-  const handleDetailsClick = () => {
-    setIsDetailsOpen(true);
-  };
-  
-  const handleReviewClick = () => {
-    setIsReviewOpen(true);
-  };
+  const [isReviewDialogOpen, setIsReviewDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  const handleProvideQuote = () => {
-    const amount = parseInt(quoteAmount.trim());
-    if (isNaN(amount) || amount <= 0) {
-      toast.error('Please enter a valid quote amount');
+  const handleQuoteSubmit = () => {
+    const amount = Number(quoteAmount);
+    if (!amount || amount <= 0) {
+      toast.error('Please enter a valid amount');
       return;
     }
     
     onProvideQuote(formula.id, amount);
-    setIsProvidingQuote(false);
+    setIsQuoteDialogOpen(false);
     setQuoteAmount('');
   };
 
@@ -50,85 +56,97 @@ const FormulaActions: React.FC<FormulaActionsProps> = ({
     }
   };
 
+  const handleDelete = async () => {
+    try {
+      setIsDeleting(true);
+      await deleteFormula(formula.id, formula.file_path);
+      toast.success('Formula deleted successfully');
+      setIsDeleteDialogOpen(false);
+      if (onRefresh) {
+        onRefresh();
+      }
+    } catch (error: any) {
+      toast.error(`Failed to delete formula: ${error.message}`);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
-    <div className="flex space-x-2">
-      {/* View Details Button */}
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={handleDetailsClick}
-      >
-        <Eye className="h-4 w-4 mr-1" />
-        Details
-      </Button>
-      
-      {/* Review Formula Button */}
-      <Button
-        variant={formula.status === 'paid' ? 'default' : 'outline'}
-        size="sm"
-        onClick={handleReviewClick}
-      >
+    <div className="flex gap-2">
+      <Button size="sm" variant="outline" onClick={() => setIsReviewDialogOpen(true)}>
         <FileText className="h-4 w-4 mr-1" />
-        {formula.status === 'paid' ? 'Review' : 'View'}
+        Review
       </Button>
       
-      {/* Quote Actions */}
       {formula.status === 'quote_requested' && (
-        isProvidingQuote ? (
-          <div className="flex space-x-1">
-            <input
-              type="number"
-              value={quoteAmount}
-              onChange={(e) => setQuoteAmount(e.target.value)}
-              placeholder="$ Amount"
-              className="w-20 h-8 text-sm px-2 border rounded"
-            />
-            <Button
-              size="sm"
-              onClick={handleProvideQuote}
-            >
-              <Check className="h-3 w-3 mr-1" />
-              Set
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => setIsProvidingQuote(false)}
-            >
-              Cancel
-            </Button>
-          </div>
-        ) : (
-          <Button
-            size="sm"
-            onClick={() => setIsProvidingQuote(true)}
-          >
-            Provide Quote
-          </Button>
-        )
-      )}
-      
-      {/* Completed Status */}
-      {formula.status === 'completed' && (
-        <span className="text-sm text-green-600 flex items-center">
-          <Check className="h-4 w-4 mr-1" />
-          Completed
-        </span>
+        <Button size="sm" onClick={() => setIsQuoteDialogOpen(true)}>
+          <DollarSign className="h-4 w-4 mr-1" />
+          Quote
+        </Button>
       )}
 
-      {/* Dialogs */}
-      <FormulaDetailsDialog
-        isOpen={isDetailsOpen}
-        onClose={() => setIsDetailsOpen(false)}
-        formula={formula}
-      />
+      <Button size="sm" variant="destructive" onClick={() => setIsDeleteDialogOpen(true)}>
+        <Trash2 className="h-4 w-4" />
+      </Button>
       
-      <FormulaReviewDialog
-        isOpen={isReviewOpen}
-        onClose={() => setIsReviewOpen(false)}
+      {/* Quote Dialog */}
+      <Dialog open={isQuoteDialogOpen} onOpenChange={setIsQuoteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Provide Quote</DialogTitle>
+            <DialogDescription>
+              Enter the quote amount for this formula review
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="flex items-center space-x-2">
+              <span>$</span>
+              <Input 
+                type="number" 
+                placeholder="Amount" 
+                value={quoteAmount} 
+                onChange={(e) => setQuoteAmount(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsQuoteDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleQuoteSubmit}>Submit Quote</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Review Dialog */}
+      <FormulaReviewDialog 
+        isOpen={isReviewDialogOpen}
+        onClose={() => setIsReviewDialogOpen(false)}
         formula={formula}
         onReviewComplete={handleReviewComplete}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Formula</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this formula? This action cannot be undone.
+              All associated files and review data will be permanently removed.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDelete}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

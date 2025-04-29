@@ -151,3 +151,52 @@ export const getAllFormulas = async () => {
     throw new Error(`Failed to load formulas: ${error.message || 'Unknown error'}`);
   }
 };
+
+// Delete a formula from the database and storage
+export const deleteFormula = async (formulaId: string, filePath?: string) => {
+  try {
+    console.log('Deleting formula:', formulaId);
+    
+    // First delete the formula record
+    const { error: formulaError } = await supabase
+      .from('formulas')
+      .delete()
+      .eq('id', formulaId);
+      
+    if (formulaError) {
+      console.error('Error deleting formula record:', formulaError);
+      throw formulaError;
+    }
+    
+    // If we have a file path, also delete the file from storage
+    if (filePath) {
+      console.log('Deleting file from storage:', filePath);
+      const { error: storageError } = await supabase.storage
+        .from('formula_files')
+        .remove([filePath]);
+        
+      if (storageError) {
+        console.error('Error deleting formula file from storage:', storageError);
+        // We don't throw here because we already deleted the record
+        // Just log the error and continue
+      }
+    }
+    
+    // Also delete any review data related to this formula
+    const { error: reviewError } = await supabase
+      .from('reviews')
+      .delete()
+      .eq('formula_id', formulaId);
+      
+    if (reviewError) {
+      console.error('Error deleting associated review data:', reviewError);
+      // We don't throw here because the main record is already deleted
+    }
+    
+    console.log('Formula successfully deleted');
+    return true;
+  } catch (error: any) {
+    console.error('Delete formula error:', error);
+    throw new Error(`Failed to delete formula: ${error.message || 'Unknown error'}`);
+  }
+};

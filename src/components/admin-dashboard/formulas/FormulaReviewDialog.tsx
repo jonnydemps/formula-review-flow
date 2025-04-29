@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   Dialog,
@@ -162,10 +161,19 @@ const FormulaReviewDialog: React.FC<FormulaReviewDialogProps> = ({
     
     setIsSubmitting(true);
     try {
-      // Ensure the data conforms to ReviewData type
+      // Convert ingredients to ensure they match the Ingredient type exactly
+      const ingredients: Ingredient[] = data.ingredients.map(ing => ({
+        id: ing.id || String(Date.now()),
+        name: ing.name,
+        percentage: ing.percentage || '',
+        compliant: ing.compliant,
+        notes: ing.notes || ''
+      }));
+      
+      // Create a properly typed ReviewData object
       const reviewData: ReviewData = {
         reviewNotes: data.reviewNotes,
-        ingredients: data.ingredients
+        ingredients: ingredients
       };
       
       await saveReview(formula.id, user.id, reviewData);
@@ -188,10 +196,19 @@ const FormulaReviewDialog: React.FC<FormulaReviewDialogProps> = ({
       // First save current review data
       const currentData = form.getValues();
       
-      // Ensure the data conforms to ReviewData type
+      // Convert ingredients to ensure they match the Ingredient type exactly
+      const ingredients: Ingredient[] = currentData.ingredients.map(ing => ({
+        id: ing.id || String(Date.now()),
+        name: ing.name,
+        percentage: ing.percentage || '',
+        compliant: ing.compliant,
+        notes: ing.notes || ''
+      }));
+      
+      // Create a properly typed ReviewData object
       const reviewData: ReviewData = {
         reviewNotes: currentData.reviewNotes,
-        ingredients: currentData.ingredients
+        ingredients: ingredients
       };
       
       await saveReview(formula.id, user.id, reviewData);
