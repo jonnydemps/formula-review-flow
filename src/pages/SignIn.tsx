@@ -1,117 +1,134 @@
 
 import React, { useState } from 'react';
-import { Link, Navigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
+import { signIn } from '@/services/authService';
 import { useAuth } from '@/contexts/AuthContext';
+
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { TestTube, LogIn } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { LogIn } from 'lucide-react';
 import { toast } from 'sonner';
+import Header from '@/components/Header';
 
 const SignIn: React.FC = () => {
-  const { user, signIn, isLoading } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState('');
-  
-  // Redirect if already logged in
-  if (user) {
-    console.log("User already logged in, role:", user.role);
-    if (user.role === 'admin') return <Navigate to="/admin-dashboard" />;
-    return <Navigate to="/customer-dashboard" />;
-  }
+  const navigate = useNavigate();
+  const { user, isLoading } = useAuth();
+
+  // If the user is already logged in, redirect to the appropriate dashboard
+  React.useEffect(() => {
+    if (user) {
+      if (user.email === 'john-dempsey@hotmail.co.uk') {
+        navigate('/admin-dashboard');
+      } else {
+        navigate('/customer-dashboard');
+      }
+    }
+  }, [user, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError(null);
     setIsSubmitting(true);
-    
+
     try {
-      toast.info('Signing in...');
-      console.log('Sign-in form submitted for:', email);
-      await signIn(email, password);
+      const { error } = await signIn(email, password);
+      
+      if (error) {
+        throw new Error(error.message);
+      }
+      
+      toast.success("Signed in successfully");
+      
+      // Auth context will handle the redirect
     } catch (err: any) {
-      console.error('Sign in form error:', err);
-      setError(err.message || 'Invalid email or password');
-    } finally {
+      console.error('Sign in error:', err);
+      setError(err.message || 'Failed to sign in');
+      toast.error(err.message || 'Failed to sign in');
       setIsSubmitting(false);
     }
   };
 
+  // Don't show the sign-in page if we're still checking authentication
+  if (isLoading) {
+    return (
+      <div className="flex flex-col min-h-screen">
+        <Header />
+        <main className="flex-1 flex items-center justify-center p-6">
+          <p>Loading...</p>
+        </main>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
-      <div className="w-full max-w-md page-transition">
-        <div className="text-center mb-8">
-          <Link to="/" className="inline-flex items-center gap-2 text-ra-blue font-medium text-2xl">
-            <TestTube className="h-6 w-6" />
-            <span>SimplyRA</span>
-          </Link>
-        </div>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-center">Sign In</CardTitle>
+    <div className="flex flex-col min-h-screen">
+      <Header />
+      <main className="flex-1 flex items-center justify-center p-6">
+        <Card className="w-full max-w-md">
+          <CardHeader className="space-y-1">
+            <CardTitle className="text-2xl font-bold text-center">Sign In</CardTitle>
             <CardDescription className="text-center">
-              Enter your credentials to access your account
+              Enter your email and password to access your account
             </CardDescription>
           </CardHeader>
-          <form onSubmit={handleSubmit}>
-            <CardContent className="space-y-4">
+          <CardContent>
+            <form onSubmit={handleSubmit}>
               {error && (
-                <div className="bg-red-50 text-red-700 p-3 rounded-md text-sm">
-                  {error}
-                </div>
+                <Alert variant="destructive" className="mb-4">
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
               )}
-              
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="email@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  autoComplete="email"
-                />
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label htmlFor="email" className="text-sm font-medium">Email</label>
+                  <Input 
+                    id="email" 
+                    type="email" 
+                    placeholder="name@example.com" 
+                    required 
+                    onChange={(e) => setEmail(e.target.value)} 
+                    value={email}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label htmlFor="password" className="text-sm font-medium">Password</label>
+                  <Input 
+                    id="password" 
+                    type="password" 
+                    placeholder="•••••••••" 
+                    required
+                    onChange={(e) => setPassword(e.target.value)}
+                    value={password}
+                  />
+                </div>
               </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  autoComplete="current-password"
-                />
-              </div>
-            </CardContent>
-            
-            <CardFooter className="flex-col space-y-4">
-              <Button 
-                type="submit" 
-                className="w-full"
-                disabled={isSubmitting || isLoading}
-              >
-                {isSubmitting ? 'Signing In...' : 'Sign In'}
-                <LogIn className="ml-2 h-4 w-4" />
-              </Button>
-              
-              <div className="text-sm text-center text-gray-500">
-                Don't have an account?{' '}
-                <Link to="/sign-up" className="text-ra-blue hover:underline">
-                  Sign Up
-                </Link>
-              </div>
-            </CardFooter>
-          </form>
+            </form>
+          </CardContent>
+          <CardFooter className="flex-col space-y-4">
+            <Button 
+              type="submit" 
+              className="w-full"
+              disabled={isSubmitting || !email || !password}
+              onClick={handleSubmit}
+            >
+              {isSubmitting ? 'Signing In...' : 'Sign In'}
+              <LogIn className="ml-2 h-4 w-4" />
+            </Button>
+            <div className="text-center text-sm">
+              Don't have an account?{" "}
+              <Link to="/sign-up" className="text-ra-blue hover:underline">
+                Sign up
+              </Link>
+            </div>
+          </CardFooter>
         </Card>
-      </div>
+      </main>
     </div>
   );
 };

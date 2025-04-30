@@ -22,8 +22,12 @@ export const createCheckoutSession = async (formulaId: string, amount: number) =
   try {
     console.log(`Creating checkout session for formula: ${formulaId}, amount: $${amount}`);
     
+    // Create the checkout session through the Edge Function
     const { data, error } = await supabase.functions.invoke('create-checkout', {
-      body: { formulaId, amount }
+      body: { 
+        formulaId, 
+        amount 
+      }
     });
 
     console.log('Checkout session response:', data, error);
