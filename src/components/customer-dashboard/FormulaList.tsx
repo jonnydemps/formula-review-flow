@@ -1,62 +1,49 @@
 
-import React from 'react';
+import { Card } from '@/components/ui/card';
 import FormulaItem from './FormulaItem';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertTriangle } from 'lucide-react';
-
-interface Formula {
-  id: string;
-  original_filename: string;
-  status: string;
-  created_at: string;
-  quote_amount: number | null;
-}
+import { Loader2 } from 'lucide-react';
 
 interface FormulaListProps {
   formulas: any[];
   isLoading: boolean;
-  error?: any;
-  onAcceptQuote: (id: string, quote: number) => void;
+  onAcceptQuote: (id: string, amount: number) => void;
 }
 
-const FormulaList: React.FC<FormulaListProps> = ({ formulas, isLoading, error, onAcceptQuote }) => {
+const FormulaList: React.FC<FormulaListProps> = ({ 
+  formulas, 
+  isLoading, 
+  onAcceptQuote 
+}) => {
   if (isLoading) {
     return (
       <div className="p-8 text-center">
-        <p>Loading your formulas...</p>
+        <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" />
+        <p className="text-gray-500">Loading your formulas...</p>
       </div>
     );
   }
 
-  if (error) {
+  if (formulas.length === 0) {
     return (
-      <Alert variant="destructive" className="mb-4">
-        <AlertTriangle className="h-4 w-4 mr-2" />
-        <AlertDescription>
-          {error.message || 'Error loading formulas. Please try refreshing the page.'}
-        </AlertDescription>
-      </Alert>
-    );
-  }
-
-  if (!formulas || formulas.length === 0) {
-    return (
-      <div className="p-8 text-center border rounded-md">
-        <p>You haven't uploaded any formulas yet.</p>
+      <div className="p-8 text-center border-2 border-dashed border-gray-200 rounded-md">
+        <p className="text-gray-500">No formulas submitted yet</p>
+        <p className="text-sm text-gray-400 mt-1">
+          Upload a formula to get started
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
-      {formulas.map(formula => (
+    <div>
+      {formulas.map((formula) => (
         <FormulaItem
           key={formula.id}
           id={formula.id}
-          filename={formula.original_filename || formula.name}
+          filename={formula.original_filename}
           status={formula.status}
-          createdAt={formula.created_at || formula.uploadDate}
-          quoteAmount={formula.quote_amount || formula.quote}
+          createdAt={formula.created_at}
+          quoteAmount={formula.quote_amount}
           onAcceptQuote={onAcceptQuote}
         />
       ))}

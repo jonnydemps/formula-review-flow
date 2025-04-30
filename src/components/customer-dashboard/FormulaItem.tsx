@@ -65,7 +65,12 @@ const FormulaItem: React.FC<FormulaItemProps> = ({
 
   const handlePayment = () => {
     if (quoteAmount) {
-      onAcceptQuote(id, quoteAmount);
+      navigate('/payment', { 
+        state: { 
+          formulaId: id, 
+          amount: quoteAmount 
+        } 
+      });
     } else {
       toast.error('Quote amount is not available');
     }
@@ -133,7 +138,7 @@ const FormulaItem: React.FC<FormulaItemProps> = ({
   };
 
   return (
-    <Card className="p-4 mb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <Card className="p-4 mb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:shadow-md transition-shadow">
       <div className="flex-1">
         <div className="flex items-center gap-2">
           <span className="font-medium truncate max-w-[200px]">{filename}</span>
@@ -152,13 +157,20 @@ const FormulaItem: React.FC<FormulaItemProps> = ({
           size="sm" 
           variant="outline"
           onClick={handleViewDetails}
+          className="hover:bg-gray-100"
         >
           <FileText className="h-4 w-4 mr-1" />
           View Details
         </Button>
 
         {status === 'pending_review' && (
-          <Button size="sm" onClick={requestQuote}>Request Quote</Button>
+          <Button 
+            size="sm" 
+            onClick={requestQuote}
+            className="bg-ra-blue hover:bg-ra-blue-dark"
+          >
+            Request Quote
+          </Button>
         )}
         
         {status === 'quote_requested' && (
@@ -166,7 +178,11 @@ const FormulaItem: React.FC<FormulaItemProps> = ({
         )}
         
         {status === 'quote_provided' && (
-          <Button size="sm" onClick={handlePayment}>
+          <Button 
+            size="sm" 
+            onClick={handlePayment}
+            className="bg-green-600 hover:bg-green-700"
+          >
             Pay ${quoteAmount}
           </Button>
         )}
@@ -176,7 +192,11 @@ const FormulaItem: React.FC<FormulaItemProps> = ({
         )}
         
         {status === 'completed' && (
-          <Button size="sm" onClick={handleDownloadReport}>
+          <Button 
+            size="sm" 
+            onClick={handleDownloadReport}
+            className="bg-ra-blue hover:bg-ra-blue-dark"
+          >
             <Download className="h-4 w-4 mr-1" />
             Download Report
           </Button>
