@@ -96,7 +96,7 @@ const SignIn: React.FC = () => {
               <Button 
                 type="submit" 
                 className="w-full"
-                disabled={isSubmitting && isLoading}
+                disabled={isSubmitting || isLoading}
               >
                 {isSubmitting ? 'Signing In...' : 'Sign In'}
                 <LogIn className="ml-2 h-4 w-4" />

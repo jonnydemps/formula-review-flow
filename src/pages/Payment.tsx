@@ -48,20 +48,25 @@ const Payment: React.FC = () => {
       console.log(`Initiating payment for formula: ${state.formulaId}, amount: $${state.amount}`);
       
       // Create Stripe checkout session
-      const session = await createCheckoutSession(state.formulaId, state.amount);
-      
-      if (session && session.url) {
-        console.log(`Redirecting to Stripe checkout: ${session.url}`);
-        // Use window.open for a more reliable redirect that works better with popup blockers
-        const checkoutWindow = window.open(session.url, '_self');
-        
-        // Fallback if window.open is blocked
-        if (!checkoutWindow) {
-          window.location.href = session.url;
+      const { data, error } = await supabase.functions.invoke('create-checkout', {
+        body: { 
+          formulaId: state.formulaId, 
+          amount: state.amount 
         }
-      } else {
-        throw new Error('No checkout URL received');
+      });
+      
+      console.log('Checkout session response:', data, error);
+
+      if (error) {
+        throw new Error(`Failed to create checkout: ${error.message || 'Unknown error'}`);
       }
+      
+      if (!data || !data.url) {
+        throw new Error('Failed to create checkout session: Invalid response from server');
+      }
+      
+      console.log(`Redirecting to Stripe checkout: ${data.url}`);
+      window.location.href = data.url;
     } catch (error: any) {
       console.error('Payment initialization error:', error);
       setError(error.message || 'Failed to initialize payment');
@@ -128,7 +133,6 @@ const Payment: React.FC = () => {
               className="w-full bg-ra-blue hover:bg-ra-blue-dark transition-all shadow-md hover:shadow-lg"
               onClick={handlePayment}
               disabled={loading}
-              type="button" 
             >
               {loading ? (
                 <>

@@ -22,9 +22,6 @@ export const createCheckoutSession = async (formulaId: string, amount: number) =
   try {
     console.log(`Creating checkout session for formula: ${formulaId}, amount: $${amount}`);
     
-    // Add a slight delay to ensure the function is ready (sometimes helps with cold starts)
-    await new Promise(resolve => setTimeout(resolve, 100));
-    
     const { data, error } = await supabase.functions.invoke('create-checkout', {
       body: { formulaId, amount }
     });
@@ -42,10 +39,7 @@ export const createCheckoutSession = async (formulaId: string, amount: number) =
     }
     
     console.log('Checkout session created successfully:', data.url);
-    return {
-      id: data.sessionId || 'unknown-session',
-      url: data.url
-    };
+    return data;
   } catch (error: any) {
     console.error('Error creating checkout session:', error);
     throw new Error(`Payment initialization failed: ${error.message || 'Unknown error'}`);
