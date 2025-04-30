@@ -95,8 +95,8 @@ const SignIn: React.FC = () => {
             <CardFooter className="flex-col space-y-4">
               <Button 
                 type="submit" 
-                className="w-full" 
-                disabled={isSubmitting || isLoading}
+                className="w-full"
+                disabled={isSubmitting && isLoading}
               >
                 {isSubmitting ? 'Signing In...' : 'Sign In'}
                 <LogIn className="ml-2 h-4 w-4" />

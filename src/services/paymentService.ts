@@ -22,6 +22,9 @@ export const createCheckoutSession = async (formulaId: string, amount: number) =
   try {
     console.log(`Creating checkout session for formula: ${formulaId}, amount: $${amount}`);
     
+    // Add a slight delay to ensure the function is ready (sometimes helps with cold starts)
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
     const { data, error } = await supabase.functions.invoke('create-checkout', {
       body: { formulaId, amount }
     });

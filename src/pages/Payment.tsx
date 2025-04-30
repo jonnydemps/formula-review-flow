@@ -50,10 +50,15 @@ const Payment: React.FC = () => {
       // Create Stripe checkout session
       const session = await createCheckoutSession(state.formulaId, state.amount);
       
-      // Redirect to Stripe Checkout
-      if (session.url) {
+      if (session && session.url) {
         console.log(`Redirecting to Stripe checkout: ${session.url}`);
-        window.location.href = session.url;
+        // Use window.open for a more reliable redirect that works better with popup blockers
+        const checkoutWindow = window.open(session.url, '_self');
+        
+        // Fallback if window.open is blocked
+        if (!checkoutWindow) {
+          window.location.href = session.url;
+        }
       } else {
         throw new Error('No checkout URL received');
       }
@@ -123,6 +128,7 @@ const Payment: React.FC = () => {
               className="w-full bg-ra-blue hover:bg-ra-blue-dark transition-all shadow-md hover:shadow-lg"
               onClick={handlePayment}
               disabled={loading}
+              type="button" 
             >
               {loading ? (
                 <>
