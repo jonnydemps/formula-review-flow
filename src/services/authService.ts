@@ -3,15 +3,20 @@ import { supabase } from '@/integrations/supabase/client';
 import { User, UserRole } from '@/types/auth';
 import { toast } from 'sonner';
 
-type SignInResponse = {
-  data?: {
+export type SignInSuccess = {
+  data: {
     user: any;
     session: any;
   };
-  error?: {
+};
+
+export type SignInError = {
+  error: {
     message: string;
   };
-}
+};
+
+export type SignInResponse = SignInSuccess | SignInError;
 
 export const signIn = async (email: string, password: string): Promise<SignInResponse> => {
   try {

@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { signIn } from '@/services/authService';
+import { signIn, SignInResponse } from '@/services/authService';
 import { useAuth } from '@/contexts/AuthContext';
 
 import { Button } from '@/components/ui/button';
@@ -39,8 +39,8 @@ const SignIn: React.FC = () => {
     try {
       const result = await signIn(email, password);
       
-      // Check if result contains an error
-      if ('error' in result && result.error) {
+      // Check if result contains an error - proper type checking
+      if ('error' in result) {
         throw new Error(result.error.message);
       }
       
