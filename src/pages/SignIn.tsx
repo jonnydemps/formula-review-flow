@@ -37,10 +37,11 @@ const SignIn: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      const { error } = await signIn(email, password);
+      const result = await signIn(email, password);
       
-      if (error) {
-        throw new Error(error.message);
+      // Check if result contains an error
+      if ('error' in result && result.error) {
+        throw new Error(result.error.message);
       }
       
       toast.success("Signed in successfully");
@@ -50,6 +51,7 @@ const SignIn: React.FC = () => {
       console.error('Sign in error:', err);
       setError(err.message || 'Failed to sign in');
       toast.error(err.message || 'Failed to sign in');
+    } finally {
       setIsSubmitting(false);
     }
   };

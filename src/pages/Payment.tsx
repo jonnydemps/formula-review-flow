@@ -52,7 +52,7 @@ const Payment: React.FC = () => {
       
       if (session && session.url) {
         console.log(`Redirecting to Stripe checkout: ${session.url}`);
-        // Use direct location change for most reliable redirect
+        // Use direct window.location change for most reliable redirect
         window.location.href = session.url;
       } else {
         throw new Error('No checkout URL received');

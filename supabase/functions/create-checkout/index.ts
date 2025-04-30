@@ -13,9 +13,15 @@ interface RequestBody {
 }
 
 serve(async (req) => {
+  console.log("Request received to create-checkout function");
+  
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    console.log("Handling CORS preflight request");
+    return new Response(null, { 
+      status: 204,
+      headers: corsHeaders 
+    });
   }
 
   try {
@@ -25,6 +31,7 @@ serve(async (req) => {
     console.log(`Creating checkout session for formula: ${formulaId}, amount: $${amount}`);
     
     if (!formulaId || !amount) {
+      console.error("Missing required parameters");
       return new Response(
         JSON.stringify({ error: 'Missing required parameters: formulaId and amount' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -32,6 +39,7 @@ serve(async (req) => {
     }
     
     if (!STRIPE_SECRET_KEY) {
+      console.error("Missing STRIPE_SECRET_KEY");
       throw new Error('Missing STRIPE_SECRET_KEY environment variable');
     }
     
@@ -62,7 +70,7 @@ serve(async (req) => {
       cancel_url: `${SITE_URL}/customer-dashboard?payment_cancelled=true`,
     });
     
-    console.log('Created checkout session:', session.id);
+    console.log('Created checkout session:', session.id, 'with URL:', session.url);
     
     return new Response(
       JSON.stringify({ 
@@ -74,7 +82,7 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
       }
     );
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error creating checkout session:', error);
     
     return new Response(

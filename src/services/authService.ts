@@ -3,7 +3,17 @@ import { supabase } from '@/integrations/supabase/client';
 import { User, UserRole } from '@/types/auth';
 import { toast } from 'sonner';
 
-export const signIn = async (email: string, password: string) => {
+type SignInResponse = {
+  data?: {
+    user: any;
+    session: any;
+  };
+  error?: {
+    message: string;
+  };
+}
+
+export const signIn = async (email: string, password: string): Promise<SignInResponse> => {
   try {
     console.log('Attempting sign in for:', email);
     const { data, error } = await supabase.auth.signInWithPassword({
@@ -15,7 +25,7 @@ export const signIn = async (email: string, password: string) => {
 
     console.log('Sign in successful:', data.user?.id);
     toast.success('Successfully signed in');
-    return data;
+    return { data };
   } catch (error: any) {
     console.error('Sign in error:', error);
     
@@ -27,7 +37,8 @@ export const signIn = async (email: string, password: string) => {
     } else {
       toast.error(error.message || 'Failed to sign in');
     }
-    throw error;
+    
+    return { error };
   }
 };
 
