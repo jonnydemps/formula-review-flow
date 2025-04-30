@@ -6,7 +6,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button'; 
-import { RefreshCcw } from 'lucide-react';
+import { RefreshCcw, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { uploadFormulaFile, createFormula } from '@/services/formulaService';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -16,12 +16,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { handlePaymentSuccess } from '@/services/paymentService';
 
 const CustomerDashboard: React.FC = () => {
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [isUploading, setIsUploading] = useState(false);
   const [showUploader, setShowUploader] = useState(false);
   const queryClient = useQueryClient();
+
+  console.log('Dashboard rendering, auth state:', { user, authLoading });
 
   // Get query parameters
   const queryParams = new URLSearchParams(location.search);
@@ -54,25 +56,37 @@ const CustomerDashboard: React.FC = () => {
 
   // Protect route - redirect if not authenticated or not a customer
   useEffect(() => {
-    if (!user) {
+    console.log('Auth check effect running, user:', user, 'loading:', authLoading);
+    
+    if (!authLoading && !user) {
+      console.log('User not authenticated, redirecting to sign-in');
       navigate('/sign-in');
-    } else if (user.role !== 'customer') {
+    } else if (!authLoading && user && user.role !== 'customer') {
+      console.log('User is not a customer, redirecting to admin dashboard');
       navigate('/admin-dashboard');
     }
-  }, [user, navigate]);
+  }, [user, authLoading, navigate]);
 
-  // Custom fetch function to get customer formulas - simplified now that RLS is disabled
+  // Custom fetch function to get customer formulas
   const getCustomerFormulas = async () => {
-    if (!user) return [];
+    if (!user) {
+      console.log('No user, cannot fetch formulas');
+      return [];
+    }
     
     try {
+      console.log('Fetching formulas for customer:', user.id);
       const { data, error } = await supabase
         .from('formulas')
         .select('*')
         .eq('customer_id', user.id)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching formulas:', error);
+        throw error;
+      }
+      
       console.log('Customer formulas:', data);
       return data || [];
     } catch (error) {
@@ -82,10 +96,11 @@ const CustomerDashboard: React.FC = () => {
   };
 
   // Fetch formulas for the customer
-  const { data: formulas = [], isLoading, refetch } = useQuery({
+  const { data: formulas = [], isLoading: formulasLoading, refetch } = useQuery({
     queryKey: ['formulas', user?.id],
     queryFn: getCustomerFormulas,
-    enabled: !!user
+    enabled: !!user,
+    retry: 1
   });
 
   // File upload mutation
@@ -133,6 +148,23 @@ const CustomerDashboard: React.FC = () => {
     toast.info('Refreshing formulas...');
   };
 
+  // Show loading state while checking authentication
+  if (authLoading) {
+    return (
+      <div className="flex flex-col min-h-screen">
+        <Header />
+        <main className="flex-grow bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <Loader2 className="h-10 w-10 animate-spin mx-auto mb-4" />
+            <p className="text-gray-500">Loading your dashboard...</p>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  // Redirect if no user (should be handled by the useEffect, but this is a fallback)
   if (!user) {
     return null;
   }
@@ -176,7 +208,7 @@ const CustomerDashboard: React.FC = () => {
               <CardContent>
                 <FormulaList 
                   formulas={formulas}
-                  isLoading={isLoading}
+                  isLoading={formulasLoading}
                   onAcceptQuote={handleAcceptQuote}
                 />
               </CardContent>

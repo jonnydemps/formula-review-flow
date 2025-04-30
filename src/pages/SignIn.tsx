@@ -37,20 +37,19 @@ const SignIn: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      const result = await signIn(email, password);
+      const response = await signIn(email, password);
       
-      // Check if result contains an error - proper type checking
-      if ('error' in result) {
-        throw new Error(result.error.message);
+      // Check if response contains an error using proper type guard
+      if ('error' in response) {
+        console.error('Sign in error:', response.error);
+        setError(response.error.message || 'Failed to sign in');
+      } else {
+        toast.success("Signed in successfully");
+        // Auth context will handle the redirect
       }
-      
-      toast.success("Signed in successfully");
-      
-      // Auth context will handle the redirect
     } catch (err: any) {
-      console.error('Sign in error:', err);
+      console.error('Sign in exception:', err);
       setError(err.message || 'Failed to sign in');
-      toast.error(err.message || 'Failed to sign in');
     } finally {
       setIsSubmitting(false);
     }
