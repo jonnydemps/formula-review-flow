@@ -20,13 +20,25 @@ export const processPayment = async (formulaId: string, amount: number) => {
 // Create checkout session with Stripe
 export const createCheckoutSession = async (formulaId: string, amount: number) => {
   try {
+    console.log(`Creating checkout session for formula: ${formulaId}, amount: $${amount}`);
+    
     const { data, error } = await supabase.functions.invoke('create-checkout', {
       body: { formulaId, amount }
     });
 
-    if (error) throw error;
-    if (!data.success) throw new Error(data.error || 'Failed to create checkout session');
+    console.log('Checkout session response:', data, error);
+
+    if (error) {
+      console.error('Error from create-checkout function:', error);
+      throw error;
+    }
     
+    if (!data.success) {
+      console.error('Checkout session creation failed:', data.error || 'Unknown error');
+      throw new Error(data.error || 'Failed to create checkout session');
+    }
+    
+    console.log('Checkout session created successfully:', data.url);
     return {
       id: data.sessionId,
       url: data.url
@@ -40,6 +52,8 @@ export const createCheckoutSession = async (formulaId: string, amount: number) =
 // Handle successful payment after Stripe redirects back to the app
 export const handlePaymentSuccess = async (formulaId: string) => {
   try {
+    console.log('Processing payment success for formula:', formulaId);
+    
     // Mark the formula as paid in the database
     const { data, error } = await supabase
       .from('formulas')
@@ -49,6 +63,8 @@ export const handlePaymentSuccess = async (formulaId: string) => {
       .single();
       
     if (error) throw error;
+    
+    console.log('Formula marked as paid:', data);
     return data;
   } catch (error: any) {
     console.error('Error handling payment success:', error);

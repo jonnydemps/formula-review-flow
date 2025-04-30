@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { createCheckoutSession } from '@/services/paymentService';
+import { Loader2 } from 'lucide-react';
 
 interface LocationState {
   formulaId: string;
@@ -40,16 +41,20 @@ const Payment: React.FC = () => {
 
     setLoading(true);
     try {
+      console.log(`Initiating payment for formula: ${state.formulaId}, amount: $${state.amount}`);
+      
       // Create Stripe checkout session
       const session = await createCheckoutSession(state.formulaId, state.amount);
       
       // Redirect to Stripe Checkout
       if (session.url) {
+        console.log(`Redirecting to Stripe checkout: ${session.url}`);
         window.location.href = session.url;
       } else {
         throw new Error('No checkout URL received');
       }
     } catch (error: any) {
+      console.error('Payment initialization error:', error);
       toast.error(`Payment initialization failed: ${error.message}`);
       setLoading(false);
     }
@@ -108,7 +113,14 @@ const Payment: React.FC = () => {
               onClick={handlePayment}
               disabled={loading}
             >
-              {loading ? 'Processing...' : `Pay $${state.amount}`}
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                `Pay $${state.amount}`
+              )}
             </Button>
           </CardFooter>
         </Card>

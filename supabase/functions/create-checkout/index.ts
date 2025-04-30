@@ -12,6 +12,11 @@ const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
 const supabaseUrl = Deno.env.get("SUPABASE_URL");
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
+const logStep = (step: string, details?: any) => {
+  const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
+  console.log(`[CREATE-CHECKOUT] ${step}${detailsStr}`);
+};
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -19,13 +24,27 @@ serve(async (req) => {
   }
 
   try {
-    const stripe = new Stripe(stripeSecretKey!, {
+    logStep("Function started");
+    
+    // Check if Stripe Secret Key is available
+    if (!stripeSecretKey) {
+      logStep("ERROR: Missing Stripe Secret Key");
+      throw new Error("Missing required environment variable: STRIPE_SECRET_KEY");
+    }
+
+    // Initialize Stripe
+    const stripe = new Stripe(stripeSecretKey, {
       apiVersion: "2023-10-16",
     });
+    logStep("Stripe initialized");
 
-    const { formulaId, amount } = await req.json();
+    // Parse request body
+    const requestData = await req.json();
+    const { formulaId, amount } = requestData;
+    logStep("Request received", { formulaId, amount });
     
     if (!formulaId || !amount) {
+      logStep("ERROR: Missing required parameters");
       throw new Error("Missing required parameters: formulaId and amount");
     }
 
@@ -33,21 +52,53 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl!, supabaseServiceKey!, {
       auth: { persistSession: false }
     });
+    logStep("Supabase client created");
 
     // Get formula details to include in checkout
     const { data: formula, error: formulaError } = await supabase
       .from('formulas')
-      .select('original_filename')
+      .select('original_filename, customer_id')
       .eq('id', formulaId)
       .single();
 
     if (formulaError) {
+      logStep("ERROR: Error fetching formula", formulaError);
       throw new Error(`Error fetching formula: ${formulaError.message}`);
+    }
+    logStep("Formula details retrieved", formula);
+
+    // Get user email for the customer
+    const { data: userProfile, error: userError } = await supabase
+      .from('profiles')
+      .select('name, id')
+      .eq('id', formula.customer_id)
+      .single();
+
+    if (userError) {
+      logStep("WARNING: Could not fetch user profile", userError);
+      // Continue without user profile, not critical
+    } else {
+      logStep("User profile retrieved", userProfile);
+    }
+
+    // Get auth user email
+    const { data: authUser, error: authError } = await supabase.auth
+      .admin.getUserById(formula.customer_id);
+
+    if (authError) {
+      logStep("WARNING: Could not fetch auth user", authError);
+      // Continue without auth user, not critical
+    } else {
+      logStep("Auth user retrieved", { email: authUser.user?.email });
     }
 
     // Create a Stripe Checkout Session
+    const customerName = userProfile?.name || "Customer";
+    const customerEmail = authUser?.user?.email || undefined;
+    
+    logStep("Creating checkout session", { customerName, customerEmail, amount });
     const session = await stripe.checkout.sessions.create({
-      payment_method_types: ["card"],
+      customer_email: customerEmail,
       line_items: [
         {
           price_data: {
@@ -68,6 +119,7 @@ serve(async (req) => {
         formula_id: formulaId
       }
     });
+    logStep("Checkout session created", { sessionId: session.id, url: session.url });
 
     // Return the checkout URL
     return new Response(
@@ -83,7 +135,7 @@ serve(async (req) => {
     );
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    console.error(`Error creating checkout session: ${errorMessage}`);
+    logStep("ERROR creating checkout session", { message: errorMessage });
     
     return new Response(
       JSON.stringify({ success: false, error: errorMessage }),
