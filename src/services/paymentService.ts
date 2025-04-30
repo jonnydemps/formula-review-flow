@@ -30,22 +30,22 @@ export const createCheckoutSession = async (formulaId: string, amount: number) =
 
     if (error) {
       console.error('Error from create-checkout function:', error);
-      throw error;
+      throw new Error(`Failed to create checkout: ${error.message || 'Unknown error'}`);
     }
     
-    if (!data.success) {
-      console.error('Checkout session creation failed:', data.error || 'Unknown error');
-      throw new Error(data.error || 'Failed to create checkout session');
+    if (!data || !data.url) {
+      console.error('Invalid checkout session data:', data);
+      throw new Error('Failed to create checkout session: Invalid response from server');
     }
     
     console.log('Checkout session created successfully:', data.url);
     return {
-      id: data.sessionId,
+      id: data.sessionId || 'unknown-session',
       url: data.url
     };
   } catch (error: any) {
     console.error('Error creating checkout session:', error);
-    throw error;
+    throw new Error(`Payment initialization failed: ${error.message || 'Unknown error'}`);
   }
 };
 

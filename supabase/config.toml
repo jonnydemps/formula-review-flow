@@ -36,4 +36,3 @@ enabled = true
 [functions]
 [functions.create-checkout]
 verify_jwt = false
-

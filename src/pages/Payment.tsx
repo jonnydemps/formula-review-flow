@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { toast } from 'sonner';
 import { createCheckoutSession } from '@/services/paymentService';
 import { Loader2 } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface LocationState {
   formulaId: string;
@@ -19,17 +20,18 @@ const Payment: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const state = location.state as LocationState;
   
   useEffect(() => {
     if (!user) {
-      navigate('/sign-in');
+      navigate('/sign-in', { replace: true });
       return;
     }
     
     if (!state?.formulaId || !state?.amount) {
       toast.error("Missing payment information");
-      navigate('/customer-dashboard');
+      navigate('/customer-dashboard', { replace: true });
     }
   }, [user, navigate, state]);
 
@@ -40,6 +42,8 @@ const Payment: React.FC = () => {
     }
 
     setLoading(true);
+    setError(null);
+    
     try {
       console.log(`Initiating payment for formula: ${state.formulaId}, amount: $${state.amount}`);
       
@@ -55,6 +59,7 @@ const Payment: React.FC = () => {
       }
     } catch (error: any) {
       console.error('Payment initialization error:', error);
+      setError(error.message || 'Failed to initialize payment');
       toast.error(`Payment initialization failed: ${error.message}`);
       setLoading(false);
     }
@@ -76,6 +81,12 @@ const Payment: React.FC = () => {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 mt-4">
+            {error && (
+              <Alert variant="destructive" className="mb-4">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+
             <div className="p-4 bg-gray-100 rounded-md shadow-inner">
               <div className="flex justify-between mb-2">
                 <span>Formula Review Service</span>
