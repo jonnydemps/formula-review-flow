@@ -1,108 +1,81 @@
 
-import { User, UserRole } from '@/types/auth';
-import { supabase } from '@/integrations/supabase/client';
+import { User, UserRole } from "@/types/auth";
+import { supabase } from "@/integrations/supabase/client";
 
-// Admin email addresses
-const ADMIN_EMAILS = ['john-dempsey@hotmail.co.uk'];
-
+// Fetch user profile and role from the database
 export const fetchUserProfile = async (authUser: any): Promise<User> => {
-  console.log('Fetching profile for user:', authUser.id);
-  
-  try {
-    // Check if user should have admin role based on email
-    if (ADMIN_EMAILS.includes(authUser.email)) {
-      console.log('Admin email detected, assigning admin role');
-      return {
-        id: authUser.id,
-        email: authUser.email || '',
-        role: 'admin' as UserRole,
-        name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'Admin'
-      };
-    }
+  // console.log("Fetching profile for user:", authUser.id);
 
-    // Use maybeSingle() instead of single() to handle cases where profile might not exist
+  try {
+    // Fetch profile using maybeSingle() to handle non-existent profiles gracefully
     const { data: profileData, error: profileError } = await supabase
-      .from('profiles')
-      .select('role, name')
-      .eq('id', authUser.id)
+      .from("profiles")
+      .select("role, name")
+      .eq("id", authUser.id)
       .maybeSingle();
 
     if (profileError) {
-      console.error('Error fetching profile:', profileError);
-      // Return default profile instead of throwing
-      return createDefaultProfile(authUser);
+      console.error("Error fetching profile:", profileError);
+      // Rethrow the error if fetching fails, AuthContext can handle fallback/signout
+      throw new Error(`Failed to fetch profile: ${profileError.message}`);
     }
 
-    // If no profile exists, create one
-    if (!profileData) {
-      console.log('No profile found, creating a default profile');
-      
-      const createResult = await createUserProfile(authUser);
-      return createResult;
-    }
-
-    return {
-      id: authUser.id,
-      email: authUser.email || '',
-      role: profileData.role as UserRole,
-      name: profileData.name || authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'User'
-    };
-  } catch (error: any) {
-    console.error('Profile service error:', error);
-    
-    // Special case for admin emails during error recovery
-    if (ADMIN_EMAILS.includes(authUser.email)) {
+    // If profile exists, return user data with role from DB
+    if (profileData) {
       return {
         id: authUser.id,
-        email: authUser.email || '',
-        role: 'admin' as UserRole,
-        name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'Admin'
+        email: authUser.email || "",
+        role: profileData.role as UserRole,
+        name: profileData.name || authUser.user_metadata?.name || authUser.email?.split("@")[0] || "User",
       };
     }
-    
-    // Return default user profile instead of throwing
-    return createDefaultProfile(authUser);
+
+    // If no profile exists, create one with a default role (
+    // console.log("No profile found, creating a default profile");
+    const newUser = await createUserProfile(authUser);
+    return newUser;
+
+  } catch (error: any) {
+    console.error("Profile service error:", error);
+    // Propagate the error to be handled by the caller (e.g., AuthContext)
+    throw new Error(`Profile service failed: ${error.message}`);
   }
 };
 
-const createDefaultProfile = (authUser: any): User => {
-  const defaultRole: UserRole = 'customer';
-  const name = authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'User';
-
-  return {
-    id: authUser.id,
-    email: authUser.email || '',
-    role: defaultRole,
-    name
-  };
-};
-
+// Create a user profile in the database
 const createUserProfile = async (authUser: any): Promise<User> => {
-  const defaultRole: UserRole = 'customer';
-  const name = authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'User';
-  
+  const defaultRole: UserRole = "customer"; // Default role for new users
+  const name = authUser.user_metadata?.name || authUser.email?.split("@")[0] || "User";
+
   try {
-    const { error: insertError } = await supabase
-      .from('profiles')
+    const { data: insertedProfile, error: insertError } = await supabase
+      .from("profiles")
       .insert({
         id: authUser.id,
         name: name,
-        role: defaultRole
-      });
+        role: defaultRole,
+      })
+      .select("role, name") // Select the inserted data to confirm
+      .single();
 
     if (insertError) {
-      console.error('Error creating profile:', insertError);
-      // Fall back to default profile
+      console.error("Error creating profile:", insertError);
+      // If profile creation fails, throw an error
+      throw new Error(`Failed to create profile: ${insertError.message}`);
     }
-  } catch (error) {
-    console.error('Error creating user profile:', error);
-    // Continue with default profile
-  }
 
-  return {
-    id: authUser.id,
-    email: authUser.email || '',
-    role: defaultRole,
-    name: name
-  };
+    // Return the newly created user data
+    return {
+      id: authUser.id,
+      email: authUser.email || "",
+      role: insertedProfile.role as UserRole,
+      name: insertedProfile.name,
+    };
+
+  } catch (error: any) {
+    console.error("Error during profile creation:", error);
+    // Propagate the error
+    throw new Error(`Profile creation failed: ${error.message}`);
+  }
 };
+

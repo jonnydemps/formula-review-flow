@@ -3,16 +3,31 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-const SUPABASE_URL = "https://prcneielcpgqwzayekbc.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InByY25laWVsY3BncXd6YXlla2JjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU2NDc4NzEsImV4cCI6MjA2MTIyMzg3MX0.bken5OWzWU6AHycYkOSBUqc0QZB4XrV4yCACpDxO0OI";
+// Load environment variables
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+// Check if environment variables are loaded
+if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
+  console.error(
+    'Supabase URL or Anon Key is missing. Make sure to set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your .env file.'
+  );
+  // Optionally throw an error or handle this case appropriately
+  // throw new Error('Supabase environment variables are not set.');
+}
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: true
+export const supabase = createClient<Database>(
+  SUPABASE_URL || '', // Provide fallback to satisfy TS, but error is logged above
+  SUPABASE_PUBLISHABLE_KEY || '', // Provide fallback
+  {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true
+    }
   }
-});
+);
+
