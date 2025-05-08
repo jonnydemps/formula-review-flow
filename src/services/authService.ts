@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { User, UserRole } from '@/types/auth';
 import { toast } from 'sonner';
@@ -32,9 +31,22 @@ export const signIn = async (email: string, password: string): Promise<SignInRes
 
     if (error) throw error;
 
-    console.log('Sign in successful:', data.user?.id);
+    // Since this is a success case, we need to adapt the Supabase response to match our SignInSuccess type
+    const userData: User = {
+      id: data.user?.id || '',
+      email: data.user?.email || '',
+      name: data.user?.user_metadata?.name || '',
+      role: (data.user?.user_metadata?.role as UserRole) || 'customer'
+    };
+
+    console.log('Sign in successful:', userData.id);
     toast.success('Successfully signed in');
-    return { data };
+    return { 
+      data: {
+        user: userData,
+        session: data.session
+      } 
+    };
   } catch (error: any) {
     console.error('Sign in error:', error);
     
@@ -47,7 +59,7 @@ export const signIn = async (email: string, password: string): Promise<SignInRes
       toast.error(error.message || 'Failed to sign in');
     }
     
-    return { error };
+    return { error: { message: error.message || 'Failed to sign in' } };
   }
 };
 
