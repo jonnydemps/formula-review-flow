@@ -43,13 +43,16 @@ const SignIn: React.FC = () => {
       if ('error' in response) {
         console.error('Sign in error:', response.error);
         setError(response.error.message || 'Failed to sign in');
+        toast.error(response.error.message || 'Failed to sign in');
       } else {
+        toast.success('Sign in successful');
         console.log('Sign in success, waiting for auth context update');
         // Auth context will handle the redirect once the session is updated
       }
     } catch (err: any) {
       console.error('Sign in exception:', err);
       setError(err.message || 'Failed to sign in');
+      toast.error(err.message || 'Failed to sign in');
     } finally {
       setIsSubmitting(false);
     }

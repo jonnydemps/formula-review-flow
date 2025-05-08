@@ -3,44 +3,16 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-// Load environment variables
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-// Check if environment variables are loaded and valid
-if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
-  console.error(
-    'Supabase configuration error: Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY in .env file.'
-  );
-}
-
-// Validate URL before creating client
-const isValidUrl = (url: string) => {
-  try {
-    new URL(url);
-    return true;
-  } catch (e) {
-    return false;
-  }
-};
-
-// Default URL to use if environment variable is missing or invalid
-const DEFAULT_SUPABASE_URL = 'https://prcneielcpgqwzayekbc.supabase.co';
-
-// Use default URL if environment variable is missing or invalid
-const effectiveSupabaseUrl = (SUPABASE_URL && isValidUrl(SUPABASE_URL)) 
-  ? SUPABASE_URL 
-  : DEFAULT_SUPABASE_URL;
-
-// Use empty string as fallback for anon key if missing
-const effectiveSupabaseKey = SUPABASE_PUBLISHABLE_KEY || '';
+// Define actual URLs and keys directly for development
+const SUPABASE_URL = 'https://prcneielcpgqwzayekbc.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InByY25laWVsY3BncXd6YXlla2JjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU2NDc4NzEsImV4cCI6MjA2MTIyMzg3MX0.bken5OWzWU6AHycYkOSBUqc0QZB4XrV4yCACpDxO0OI';
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
 export const supabase = createClient<Database>(
-  effectiveSupabaseUrl,
-  effectiveSupabaseKey,
+  SUPABASE_URL,
+  SUPABASE_ANON_KEY,
   {
     auth: {
       persistSession: true,
@@ -52,7 +24,7 @@ export const supabase = createClient<Database>(
 
 // Add debug flag to help with troubleshooting
 if (import.meta.env.DEV) {
-  console.log('Supabase client initialized with URL:', effectiveSupabaseUrl ? 'Valid URL' : 'Missing URL');
+  console.log('Supabase client initialized with URL:', SUPABASE_URL);
   
   // Check for existing session on init
   supabase.auth.getSession().then(({ data }) => {

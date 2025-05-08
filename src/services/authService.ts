@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { User, UserRole } from '@/types/auth';
 import { toast } from 'sonner';
@@ -55,6 +56,8 @@ export const signIn = async (email: string, password: string): Promise<SignInRes
       toast.error('Invalid email or password. Please try again.');
     } else if (error.message?.includes('Email not confirmed')) {
       toast.error('Please confirm your email before signing in.');
+    } else if (error.message?.includes('Invalid API key')) {
+      toast.error('Authentication service configuration error. Please contact support.');
     } else {
       toast.error(error.message || 'Failed to sign in');
     }
