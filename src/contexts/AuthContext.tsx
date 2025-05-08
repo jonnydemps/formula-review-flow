@@ -8,6 +8,7 @@ import { navigateBasedOnRole } from '@/utils/navigationUtils';
 import { signIn, signUp, signOut } from '@/services/authService';
 import { toast } from 'sonner';
 
+// Create the context with a default undefined value
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -18,7 +19,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     // Initialize auth listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      // console.log('Auth state changed:', event, session?.user?.id);
+      console.log('Auth state changed:', event, session?.user?.id);
 
       if (event === 'SIGNED_IN' && session?.user) {
         setIsLoading(true);
@@ -26,7 +27,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           // Fetch user profile (which now handles role determination)
           const userData = await fetchUserProfile(session.user);
           setUser(userData);
-          // console.log('User profile fetched:', userData);
+          console.log('User profile fetched:', userData);
 
           // Use setTimeout to prevent potential state update issues during render
           setTimeout(() => {
@@ -43,20 +44,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           navigate('/'); // Redirect to home after sign out
         }
       } else if (event === 'SIGNED_OUT') {
-        // console.log('User signed out');
+        console.log('User signed out');
         setUser(null);
         navigate('/'); // Redirect to home page on sign out
         setIsLoading(false);
       } else if (event === 'INITIAL_SESSION') {
         // Handle initial session load if needed, or rely on checkSession
-        // console.log('Initial session event');
+        console.log('Initial session event');
         if (!session?.user) {
            setIsLoading(false); // No user, stop loading
         }
         // If session?.user exists, the checkSession function will handle it
       } else {
         // Handle other events like TOKEN_REFRESHED, USER_UPDATED if necessary
-        // console.log('Other auth event:', event);
+        console.log('Other auth event:', event);
         // If user data might have changed, consider re-fetching profile
         if (event === 'USER_UPDATED' && session?.user && user) {
             try {
@@ -73,7 +74,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Check for existing session on initial load
     const checkSession = async () => {
       try {
-        // console.log('Checking for existing session');
+        console.log('Checking for existing session');
         const { data: { session }, error } = await supabase.auth.getSession();
 
         if (error) {
@@ -83,17 +84,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
 
         if (!session) {
-          // console.log('No active session found');
+          console.log('No active session found');
           setIsLoading(false);
           return;
         }
 
-        // console.log('Existing session found for user:', session.user.id);
+        console.log('Existing session found for user:', session.user.id);
         // Fetch profile for the existing session user
         try {
           const userData = await fetchUserProfile(session.user);
           setUser(userData);
-          // console.log('User profile fetched for existing session:', userData);
+          console.log('User profile fetched for existing session:', userData);
           // Don't navigate here automatically, let components decide or use initial route
         } catch (profileError: any) {
           console.error('Profile fetch error during session check:', profileError);
@@ -122,7 +123,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const handleSignIn = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      // console.log('Attempting sign in for:', email);
+      console.log('Attempting sign in for:', email);
       await signIn(email, password);
       // Auth listener will handle setting user state and navigation
     } catch (error) {
@@ -149,7 +150,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const handleSignOut = async () => {
     try {
-      // console.log('User signing out');
+      console.log('User signing out');
       await signOut();
       // Auth listener handles state update and navigation
     } catch (error) {
@@ -161,24 +162,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // Create the context value object with all auth-related state and functions
+  const contextValue: AuthContextType = {
+    user,
+    isLoading,
+    signIn: handleSignIn,
+    signUp: handleSignUp,
+    signOut: handleSignOut
+  };
+
   return (
-    <AuthContext.Provider value={{
-      user,
-      isLoading,
-      signIn: handleSignIn,
-      signUp: handleSignUp,
-      signOut: handleSignOut
-    }}>
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   );
 };
 
+// Export the useAuth hook with proper error handling
 export const useAuth = () => {
   const context = useContext(AuthContext);
+  
   if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
+  
   return context;
 };
-

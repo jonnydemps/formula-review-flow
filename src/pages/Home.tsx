@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -18,6 +17,7 @@ import {
 } from 'lucide-react';
 
 const Home: React.FC = () => {
+  // Safely access user with optional chaining
   const { user } = useAuth();
 
   // Decide where to direct the user based on their authentication status and role
