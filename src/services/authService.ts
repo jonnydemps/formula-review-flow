@@ -2,20 +2,24 @@
 import { supabase } from '@/integrations/supabase/client';
 import { User, UserRole } from '@/types/auth';
 import { toast } from 'sonner';
+import { Session } from '@supabase/supabase-js';
 
-export type SignInSuccess = {
+// Define the success response type
+export interface SignInSuccess {
   data: {
-    user: any;
-    session: any;
+    user: User;
+    session: Session;
   };
-};
+}
 
-export type SignInError = {
+// Define the error response type
+export interface SignInError {
   error: {
     message: string;
   };
-};
+}
 
+// Union type for the sign-in response
 export type SignInResponse = SignInSuccess | SignInError;
 
 export const signIn = async (email: string, password: string): Promise<SignInResponse> => {

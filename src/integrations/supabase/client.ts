@@ -31,3 +31,16 @@ export const supabase = createClient<Database>(
   }
 );
 
+// Add debug flag to help with troubleshooting
+if (import.meta.env.DEV) {
+  console.log('Supabase client initialized with URL:', SUPABASE_URL ? 'Valid URL' : 'Missing URL');
+  
+  // Check for existing session on init
+  supabase.auth.getSession().then(({ data }) => {
+    if (data.session) {
+      console.log('Existing session found at initialization');
+    } else {
+      console.log('No session found at initialization');
+    }
+  });
+}
