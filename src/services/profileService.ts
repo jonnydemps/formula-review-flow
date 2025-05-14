@@ -19,7 +19,44 @@ export const fetchUserProfile = async (authUser: any): Promise<User> => {
 
   console.log("Fetching profile for user:", authUser.id);
 
+  // Special case for the admin account
+  if (authUser.email === 'john-dempsey@hotmail.co.uk') {
+    console.log("Admin account detected, setting admin role");
+    const adminUser = {
+      id: authUser.id,
+      email: authUser.email,
+      role: 'admin' as UserRole,
+      name: authUser.user_metadata?.name || 'Admin',
+    };
+    
+    // Cache the admin profile
+    profileCache.set(authUser.id, {user: adminUser, timestamp: now});
+    
+    // Ensure admin profile is saved in the database as well
+    try {
+      const { data, error } = await supabase
+        .from("profiles")
+        .upsert({
+          id: authUser.id,
+          name: adminUser.name,
+          role: adminUser.role
+        })
+        .select();
+        
+      if (error) {
+        console.error("Error updating admin profile:", error);
+      } else {
+        console.log("Admin profile saved or updated in database");
+      }
+    } catch (err) {
+      console.error("Failed to update admin profile in database:", err);
+    }
+    
+    return adminUser;
+  }
+
   try {
+    // For non-admin users, continue with the regular flow
     // Fetch profile using maybeSingle() to handle non-existent profiles gracefully
     const { data: profileData, error: profileError } = await supabase
       .from("profiles")
@@ -71,7 +108,45 @@ export const fetchUserProfile = async (authUser: any): Promise<User> => {
 
 // Create a user profile in the database
 const createUserProfile = async (authUser: any): Promise<User> => {
-  const defaultRole: UserRole = "customer"; // Default role for new users
+  // Special case for admin account
+  if (authUser.email === 'john-dempsey@hotmail.co.uk') {
+    const adminRole: UserRole = "admin";
+    const name = authUser.user_metadata?.name || "Admin";
+
+    try {
+      console.log(`Creating admin profile for ${authUser.id} with name "${name}" and role "${adminRole}"`);
+      
+      const { data: insertedProfile, error: insertError } = await supabase
+        .from("profiles")
+        .insert({
+          id: authUser.id,
+          name: name,
+          role: adminRole,
+        })
+        .select("role, name")
+        .single();
+
+      if (insertError) {
+        console.error("Error creating admin profile:", insertError);
+        throw new Error(`Failed to create admin profile: ${insertError.message}`);
+      }
+
+      console.log("Admin profile created successfully:", insertedProfile);
+      
+      return {
+        id: authUser.id,
+        email: authUser.email || "",
+        role: adminRole,
+        name: name,
+      };
+    } catch (error: any) {
+      console.error("Error during admin profile creation:", error);
+      throw new Error(`Admin profile creation failed: ${error.message}`);
+    }
+  }
+
+  // Default role for regular users
+  const defaultRole: UserRole = "customer";
   const name = authUser.user_metadata?.name || authUser.email?.split("@")[0] || "Customer " + authUser.id.substring(0, 8);
 
   try {
@@ -84,7 +159,7 @@ const createUserProfile = async (authUser: any): Promise<User> => {
         name: name,
         role: defaultRole,
       })
-      .select("role, name") // Select the inserted data to confirm
+      .select("role, name")
       .single();
 
     if (insertError) {

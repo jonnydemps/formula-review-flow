@@ -32,12 +32,15 @@ export const signIn = async (email: string, password: string): Promise<SignInRes
 
     if (error) throw error;
 
+    // Determine the role - special case for admin
+    const role: UserRole = email === 'john-dempsey@hotmail.co.uk' ? 'admin' : 'customer';
+    
     // Since this is a success case, we need to adapt the Supabase response to match our SignInSuccess type
     const userData: User = {
       id: data.user?.id || '',
       email: data.user?.email || '',
       name: data.user?.user_metadata?.name || '',
-      role: (data.user?.user_metadata?.role as UserRole) || 'customer'
+      role: role
     };
 
     console.log('Sign in successful:', userData.id);
