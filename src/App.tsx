@@ -14,6 +14,8 @@ import Payment from "./pages/Payment";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Index from "./pages/Index";
+import PaymentSuccess from "./pages/PaymentSuccess";
+import PaymentCancelled from "./pages/PaymentCancelled";
 
 // Create a client
 const queryClient = new QueryClient({
@@ -40,6 +42,22 @@ const App = () => (
               element={
                 <ProtectedRoute requiredRole="customer">
                   <CustomerDashboard />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/customer-dashboard/payment-success/:formulaId" 
+              element={
+                <ProtectedRoute requiredRole="customer">
+                  <PaymentSuccess />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/customer-dashboard/payment-cancelled" 
+              element={
+                <ProtectedRoute requiredRole="customer">
+                  <PaymentCancelled />
                 </ProtectedRoute>
               } 
             />

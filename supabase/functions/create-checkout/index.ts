@@ -56,7 +56,13 @@ serve(async (req) => {
       apiVersion: '2023-10-16',
     });
     
-    // Create a checkout session
+    // Get the origin from the request or use default
+    const origin = new URL(req.url).origin;
+    const redirectBase = origin === 'http://localhost:54321' ? SITE_URL : origin;
+    
+    console.log(`Using redirect base URL: ${redirectBase}`);
+    
+    // Create a checkout session with absolute URLs
     const session = await stripeClient.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: [
@@ -73,9 +79,9 @@ serve(async (req) => {
         },
       ],
       mode: 'payment',
-      // Fix: Use path parameters instead of query parameters for the success URL
-      success_url: `${SITE_URL}/customer-dashboard?payment_success=true&formula_id=${formulaId}`,
-      cancel_url: `${SITE_URL}/customer-dashboard?payment_cancelled=true`,
+      // Use complete URL with no query parameters - we'll handle in the success_url itself
+      success_url: `${redirectBase}/customer-dashboard/payment-success/${formulaId}`,
+      cancel_url: `${redirectBase}/customer-dashboard/payment-cancelled`,
     });
     
     console.log('Created checkout session:', session.id, 'with URL:', session.url);

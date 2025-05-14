@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -13,46 +13,15 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import FormulaList from '@/components/customer-dashboard/FormulaList';
 import UploadSection from '@/components/customer-dashboard/UploadSection';
 import { supabase } from '@/integrations/supabase/client';
-import { handlePaymentSuccess } from '@/services/paymentService';
 
 const CustomerDashboard: React.FC = () => {
   const { user, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
-  const [searchParams] = useSearchParams();
   const [isUploading, setIsUploading] = useState(false);
   const [showUploader, setShowUploader] = useState(false);
   const queryClient = useQueryClient();
 
   console.log('Dashboard rendering, auth state:', { user, authLoading });
-
-  // Get query parameters
-  const paymentSuccess = searchParams.get('payment_success');
-  const formulaId = searchParams.get('formula_id');
-  
-  // Handle payment success redirect
-  useEffect(() => {
-    if (paymentSuccess === 'true' && formulaId) {
-      // Update formula status to paid
-      handlePaymentSuccess(formulaId)
-        .then(() => {
-          toast.success('Payment successful! Your formula is now being reviewed.');
-          // Remove query params from URL
-          navigate('/customer-dashboard', { replace: true });
-          // Refresh formulas list
-          queryClient.invalidateQueries({ queryKey: ['formulas', user?.id] });
-        })
-        .catch(error => {
-          toast.error(`Error processing payment confirmation: ${error.message}`);
-        });
-    }
-    
-    if (searchParams.get('payment_cancelled') === 'true') {
-      toast.info('Payment was cancelled.');
-      // Remove query params from URL
-      navigate('/customer-dashboard', { replace: true });
-    }
-  }, [paymentSuccess, formulaId, navigate, queryClient, user, searchParams]);
 
   // Protect route - redirect if not authenticated or not a customer
   useEffect(() => {
