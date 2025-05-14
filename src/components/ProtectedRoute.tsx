@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -34,10 +33,25 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     return <Navigate to="/sign-in" replace />;
   }
 
+  // Double-check admin status by email
+  const isAdminByEmail = user.email === 'john-dempsey@hotmail.co.uk';
+  
+  // If user should be admin by email but role doesn't match, force admin role
+  if (isAdminByEmail && user.role !== 'admin') {
+    console.log('Detected admin by email but role mismatch, redirecting to admin dashboard');
+    return <Navigate to="/admin-dashboard" replace />;
+  }
+
   // If a specific role is required, check if user has that role
   if (requiredRole && user.role !== requiredRole) {
     console.log(`Protected route: User does not have required role "${requiredRole}", redirecting`);
-    // Redirect based on user's actual role
+    
+    // Special case - if admin by email, always go to admin dashboard
+    if (isAdminByEmail) {
+      return <Navigate to="/admin-dashboard" replace />;
+    }
+    
+    // Otherwise redirect based on user's actual role
     if (user.role === 'admin') {
       return <Navigate to="/admin-dashboard" replace />;
     }
