@@ -8,10 +8,13 @@ export interface User {
   name?: string;
 }
 
+// Import the SignInResponse type from authService
+import { SignInResponse } from '@/services/authService';
+
 export interface AuthContextType {
   user: User | null;
   isLoading: boolean;
-  signIn: (email: string, password: string) => Promise<void>;
+  signIn: (email: string, password: string) => Promise<SignInResponse>; // Updated return type
   signUp: (email: string, password: string, role: UserRole, name: string) => Promise<void>;
   signOut: () => void;
 }

@@ -1,26 +1,42 @@
 
 import React, { useState, useEffect } from 'react';
-import { Link, Navigate, useNavigate } from 'react-router-dom';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { TestTube, LogIn, Loader2 } from 'lucide-react';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
-const SignIn: React.FC = () => {
+const formSchema = z.object({
+  email: z.string().min(1, 'Email is required').email('Invalid email address'),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+});
+
+type FormValues = z.infer<typeof formSchema>;
+
+const SignIn = () => {
   const { user, signIn, isLoading } = useAuth();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState('');
   const navigate = useNavigate();
-  
-  // If already authenticated, redirect to appropriate dashboard
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
+
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+    },
+  });
+
+  // Redirect if already authenticated
   useEffect(() => {
     if (user) {
-      console.log('User already authenticated, redirecting to dashboard');
       if (user.role === 'admin') {
         navigate('/admin-dashboard');
       } else {
@@ -29,93 +45,100 @@ const SignIn: React.FC = () => {
     }
   }, [user, navigate]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    console.log('Sign in form submitted for:', email);
-    
+  const onSubmit = async (data: FormValues) => {
+    setAuthError(null);
     setIsSubmitting(true);
     
     try {
-      await signIn(email, password);
-      // No need to navigate here, the auth context will handle it
-    } catch (err: any) {
-      console.error('Login error:', err);
-      setError(err.message || 'Failed to sign in. Please check your credentials.');
-    } finally {
+      const response = await signIn(data.email, data.password);
+      
+      // Check if there was an error from the sign in process
+      if ('error' in response) {
+        setAuthError(response.error.message);
+        setIsSubmitting(false);
+      }
+      // No need to handle success case, AuthContext will redirect automatically
+      
+    } catch (error: any) {
+      console.error('Sign in submission error:', error);
+      setAuthError(error.message || 'Failed to sign in');
       setIsSubmitting(false);
     }
   };
 
-  // Show loading while initial auth check is happening
-  if (isLoading) {
+  // Show loading state while auth is initializing or checking
+  if (isLoading && !isSubmitting) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
+      <div className="h-screen flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4 text-ra-blue" />
+          <Loader2 className="h-12 w-12 animate-spin mx-auto text-blue-500 mb-4" />
           <p className="text-gray-500">Checking authentication...</p>
         </div>
       </div>
     );
   }
 
+  // If we're authenticated, don't render the form at all
+  if (user) {
+    return null; // useEffect will redirect
+  }
+
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
-      <div className="w-full max-w-md page-transition">
-        <div className="text-center mb-8">
-          <Link to="/" className="inline-flex items-center gap-2 text-ra-blue font-medium text-2xl">
-            <TestTube className="h-6 w-6" />
-            <span>SimplyRA</span>
-          </Link>
-        </div>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-center">Sign In</CardTitle>
-            <CardDescription className="text-center">
-              Enter your credentials to access your account
-            </CardDescription>
-          </CardHeader>
-          <form onSubmit={handleSubmit}>
-            <CardContent className="space-y-4">
-              {error && (
-                <div className="bg-red-50 text-red-700 p-3 rounded-md text-sm">
-                  {error}
-                </div>
-              )}
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <Card className="w-full max-w-md shadow-lg">
+        <CardHeader className="text-center">
+          <CardTitle className="text-2xl font-bold">Sign In</CardTitle>
+          <CardDescription>Enter your email and password to access your account</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {authError && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertDescription>{authError}</AlertDescription>
+            </Alert>
+          )}
+
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="you@example.com" 
+                        type="email" 
+                        autoComplete="email"
+                        disabled={isSubmitting}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="email@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  disabled={isSubmitting}
-                  autoComplete="email"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="password">Password</Label>
-                </div>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  disabled={isSubmitting}
-                  autoComplete="current-password"
-                />
-              </div>
-            </CardContent>
-            
-            <CardFooter className="flex-col space-y-4">
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Password</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="••••••••" 
+                        type="password" 
+                        autoComplete="current-password"
+                        disabled={isSubmitting}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
               <Button 
                 type="submit" 
                 className="w-full" 
@@ -124,26 +147,25 @@ const SignIn: React.FC = () => {
                 {isSubmitting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Signing In...
+                    Signing in...
                   </>
                 ) : (
-                  <>
-                    Sign In
-                    <LogIn className="ml-2 h-4 w-4" />
-                  </>
+                  'Sign In'
                 )}
               </Button>
-              
-              <div className="text-sm text-center text-gray-500">
-                Don't have an account?{' '}
-                <Link to="/sign-up" className="text-ra-blue hover:underline">
-                  Sign Up
-                </Link>
-              </div>
-            </CardFooter>
-          </form>
-        </Card>
-      </div>
+            </form>
+          </Form>
+          
+          <div className="mt-6 text-center text-sm">
+            <p className="text-gray-600">
+              Don't have an account?{' '}
+              <Link to="/sign-up" className="text-blue-600 hover:underline font-medium">
+                Sign up
+              </Link>
+            </p>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };

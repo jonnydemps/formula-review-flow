@@ -1,11 +1,10 @@
-
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { User, AuthContextType, UserRole } from '@/types/auth';
 import { fetchUserProfile } from '@/services/profileService';
 import { navigateBasedOnRole } from '@/utils/navigationUtils';
-import { signIn, signUp, signOut } from '@/services/authService';
+import { signIn, signUp, signOut, SignInResponse } from '@/services/authService';
 import { toast } from 'sonner';
 
 // Create the context with a default undefined value
@@ -144,7 +143,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []); // Removed navigate from dependency array to prevent re-fetching on navigation
 
-  const handleSignIn = async (email: string, password: string) => {
+  const handleSignIn = async (email: string, password: string): Promise<SignInResponse> => {
     setIsLoading(true);
     try {
       console.log('Attempting sign in for:', email);
