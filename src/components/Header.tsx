@@ -59,8 +59,8 @@ const Header: React.FC = () => {
     <header className={`sticky top-0 z-50 transition-all duration-300 ${isScrolled ? 'bg-white shadow-md' : 'bg-white/90 backdrop-blur-md shadow-sm'}`}>
       <div className="ra-container flex justify-between items-center py-4">
         <div className="flex items-center">
-          <Link to="/" className="flex items-center gap-2 text-ra-blue font-medium text-xl group">
-            <TestTube className="h-6 w-6 transform group-hover:rotate-12 transition-transform duration-300" />
+          <Link to="/" className="flex items-center gap-3 text-ra-blue font-medium text-2xl group">
+            <TestTube className="h-10 w-10 transform group-hover:rotate-12 transition-transform duration-300" />
             <span className="bg-gradient-to-r from-ra-blue to-blue-600 bg-clip-text text-transparent">SimplyRA</span>
           </Link>
         </div>
@@ -69,6 +69,11 @@ const Header: React.FC = () => {
         <nav className="hidden md:flex items-center gap-6">
           <Link to="/" className="text-gray-600 hover:text-ra-blue transition-colors relative group">
             Home
+            <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-ra-blue transition-all duration-300 group-hover:w-full"></span>
+          </Link>
+          
+          <Link to="/about-us" className="text-gray-600 hover:text-ra-blue transition-colors relative group">
+            About Us
             <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-ra-blue transition-all duration-300 group-hover:w-full"></span>
           </Link>
           
@@ -128,6 +133,15 @@ const Header: React.FC = () => {
             >
               <Home className="h-4 w-4 text-ra-blue" />
               Home
+            </Link>
+            
+            <Link 
+              to="/about-us" 
+              className="flex items-center gap-2 p-3 hover:bg-blue-50 rounded-md transition-colors"
+              onClick={closeMenu}
+            >
+              <User className="h-4 w-4 text-ra-blue" />
+              About Us
             </Link>
             
             {user ? (

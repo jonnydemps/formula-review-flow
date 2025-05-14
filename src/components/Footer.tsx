@@ -44,6 +44,12 @@ const Footer: React.FC = () => {
                 </Link>
               </li>
               <li>
+                <Link to="/about-us" className="text-gray-600 hover:text-ra-blue transition-colors flex items-center gap-2">
+                  <span className="w-1 h-1 bg-ra-blue rounded-full"></span>
+                  About Us
+                </Link>
+              </li>
+              <li>
                 <Link to="/sign-in" className="text-gray-600 hover:text-ra-blue transition-colors flex items-center gap-2">
                   <span className="w-1 h-1 bg-ra-blue rounded-full"></span>
                   Sign In
@@ -80,13 +86,13 @@ const Footer: React.FC = () => {
               </p>
               <p className="flex items-start gap-3">
                 <Phone className="h-4 w-4 text-ra-blue mt-1" />
-                <span className="text-gray-600">+61 2 1234 5678</span>
+                <span className="text-gray-600">+61 432 167 096</span>
               </p>
               <p className="flex items-start gap-3">
                 <MapPin className="h-4 w-4 text-ra-blue mt-1" />
                 <span className="text-gray-600">
-                  123 Regulatory Avenue<br />
-                  Sydney, NSW 2000<br />
+                  7 Sterling Circuit<br />
+                  Camperdown, NSW 2050<br />
                   Australia
                 </span>
               </p>

@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
-import { Beaker, ArrowRight, FileCheck, Shield, Settings } from 'lucide-react';
+import { Beaker, ArrowRight, FileCheck, Shield, Settings, Users } from 'lucide-react';
 
 const Home: React.FC = () => {
   const { user } = useAuth();
@@ -84,6 +84,15 @@ const Home: React.FC = () => {
                   Get comprehensive documentation and compliance reports within days, not weeks.
                 </p>
               </div>
+            </div>
+            
+            <div className="text-center mt-12">
+              <Button asChild variant="outline" className="rounded-full border-blue-200 hover:bg-blue-50">
+                <Link to="/about-us" className="flex items-center gap-2">
+                  <Users className="h-5 w-5 text-ra-blue" />
+                  Learn About Our Team
+                </Link>
+              </Button>
             </div>
           </div>
         </section>
