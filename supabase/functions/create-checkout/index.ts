@@ -73,6 +73,7 @@ serve(async (req) => {
         },
       ],
       mode: 'payment',
+      // Fix: Use path parameters instead of query parameters for the success URL
       success_url: `${SITE_URL}/customer-dashboard?payment_success=true&formula_id=${formulaId}`,
       cancel_url: `${SITE_URL}/customer-dashboard?payment_cancelled=true`,
     });

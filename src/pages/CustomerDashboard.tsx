@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -19,6 +19,7 @@ const CustomerDashboard: React.FC = () => {
   const { user, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const [isUploading, setIsUploading] = useState(false);
   const [showUploader, setShowUploader] = useState(false);
   const queryClient = useQueryClient();
@@ -26,9 +27,8 @@ const CustomerDashboard: React.FC = () => {
   console.log('Dashboard rendering, auth state:', { user, authLoading });
 
   // Get query parameters
-  const queryParams = new URLSearchParams(location.search);
-  const paymentSuccess = queryParams.get('payment_success');
-  const formulaId = queryParams.get('formula_id');
+  const paymentSuccess = searchParams.get('payment_success');
+  const formulaId = searchParams.get('formula_id');
   
   // Handle payment success redirect
   useEffect(() => {
@@ -47,12 +47,12 @@ const CustomerDashboard: React.FC = () => {
         });
     }
     
-    if (queryParams.get('payment_cancelled') === 'true') {
+    if (searchParams.get('payment_cancelled') === 'true') {
       toast.info('Payment was cancelled.');
       // Remove query params from URL
       navigate('/customer-dashboard', { replace: true });
     }
-  }, [paymentSuccess, formulaId, navigate, queryClient, user]);
+  }, [paymentSuccess, formulaId, navigate, queryClient, user, searchParams]);
 
   // Protect route - redirect if not authenticated or not a customer
   useEffect(() => {
