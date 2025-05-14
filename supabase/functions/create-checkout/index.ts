@@ -1,6 +1,6 @@
 
 // Follow this setup guide to integrate the Deno runtime with your Next.js app:
-// https://deno.com/deploy/docs/nextjs
+// https://deno.land/deploy/docs/nextjs
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { corsHeaders } from "../_shared/cors.ts";
 
@@ -38,9 +38,16 @@ serve(async (req) => {
       );
     }
     
+    // Check if STRIPE_SECRET_KEY is configured
     if (!STRIPE_SECRET_KEY) {
-      console.error("Missing STRIPE_SECRET_KEY");
-      throw new Error('Missing STRIPE_SECRET_KEY environment variable');
+      console.error("Missing STRIPE_SECRET_KEY environment variable");
+      return new Response(
+        JSON.stringify({ 
+          error: 'STRIPE_SECRET_KEY is not configured. Please set up Stripe Secret Key in your Supabase project.',
+          missingKey: true
+        }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
     
     // Initialize Stripe
@@ -86,7 +93,10 @@ serve(async (req) => {
     console.error('Error creating checkout session:', error);
     
     return new Response(
-      JSON.stringify({ error: error.message || 'Failed to create checkout session' }),
+      JSON.stringify({ 
+        error: error.message || 'Failed to create checkout session',
+        stack: error.stack 
+      }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

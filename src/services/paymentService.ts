@@ -1,5 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 // In a real app, this would integrate with Stripe or another payment processor
 export const processPayment = async (formulaId: string, amount: number) => {
@@ -34,6 +35,13 @@ export const createCheckoutSession = async (formulaId: string, amount: number) =
 
     if (error) {
       console.error('Error from create-checkout function:', error);
+      
+      // Handle missing Stripe key
+      if (data && data.missingKey) {
+        toast.error('Stripe integration is not fully configured. Please contact support.');
+        throw new Error('Stripe Secret Key not configured in the server');
+      }
+      
       throw new Error(`Failed to create checkout: ${error.message || 'Unknown error'}`);
     }
     
@@ -46,6 +54,7 @@ export const createCheckoutSession = async (formulaId: string, amount: number) =
     return data;
   } catch (error: any) {
     console.error('Error creating checkout session:', error);
+    toast.error(error.message || 'Payment initialization failed');
     throw new Error(`Payment initialization failed: ${error.message || 'Unknown error'}`);
   }
 };

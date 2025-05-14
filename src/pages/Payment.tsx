@@ -7,8 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { createCheckoutSession } from '@/services/paymentService';
-import { Loader2 } from 'lucide-react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Loader2, AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 interface LocationState {
   formulaId: string;
@@ -60,7 +60,7 @@ const Payment: React.FC = () => {
     } catch (error: any) {
       console.error('Payment initialization error:', error);
       setError(error.message || 'Failed to initialize payment');
-      toast.error(`Payment initialization failed: ${error.message}`);
+      toast.error(error.message || 'Payment initialization failed');
       setLoading(false);
     }
   };
@@ -83,6 +83,8 @@ const Payment: React.FC = () => {
           <CardContent className="space-y-4 mt-4">
             {error && (
               <Alert variant="destructive" className="mb-4">
+                <AlertCircle className="h-4 w-4 mr-2" />
+                <AlertTitle>Error</AlertTitle>
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
