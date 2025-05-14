@@ -18,6 +18,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const initialSessionChecked = useRef(false);
   const authChangeHandled = useRef(false);
   const profileFetchTimeout = useRef<NodeJS.Timeout | null>(null);
+  const sessionCheckComplete = useRef(false);
 
   // Function to handle profile fetch with timeout and retries
   const handleProfileFetch = async (sessionUser: any, retryCount = 0) => {
@@ -33,11 +34,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(userData);
       console.log('User profile fetched successfully:', userData);
       
-      // Use setTimeout to prevent potential state update issues during render
-      setTimeout(() => {
-        navigateBasedOnRole(navigate, userData);
-        setIsLoading(false);
-      }, 0);
+      // Don't navigate on profile fetch if we're just initializing
+      // Let the component's own protection handle navigation
+      setIsLoading(false);
       
       return true;
     } catch (error: any) {
@@ -87,56 +86,48 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setIsLoading(false);
         // Reset the flag on sign out so we can handle future sign-ins
         authChangeHandled.current = false;
+        sessionCheckComplete.current = false;
       } else if (event === 'INITIAL_SESSION') {
         // Handle initial session load if needed, or rely on checkSession
         console.log('Initial session event');
         if (!session?.user) {
            setIsLoading(false); // No user, stop loading
-        }
-        // If session?.user exists, the checkSession function will handle it
-      } else {
-        // Handle other events like TOKEN_REFRESHED, USER_UPDATED if necessary
-        console.log('Other auth event:', event);
-        // If user data might have changed, consider re-fetching profile
-        if (event === 'USER_UPDATED' && session?.user && user) {
-          try {
-            const updatedUserData = await fetchUserProfile(session.user);
-            setUser(updatedUserData);
-          } catch (error) {
-            console.error('Error re-fetching profile on USER_UPDATED:', error);
-          }
+           sessionCheckComplete.current = true;
         }
       }
     });
 
     // Check for existing session on initial load, but only once
     const checkSession = async () => {
-      if (initialSessionChecked.current) return;
+      if (sessionCheckComplete.current) return;
       
       try {
         console.log('Checking for existing session');
-        initialSessionChecked.current = true;
         
         const { data: { session }, error } = await supabase.auth.getSession();
 
         if (error) {
           console.error('Session check error:', error);
           setIsLoading(false);
+          sessionCheckComplete.current = true;
           return;
         }
 
         if (!session) {
           console.log('No active session found');
           setIsLoading(false);
+          sessionCheckComplete.current = true;
           return;
         }
 
         console.log('Existing session found for user:', session.user.id);
         // Fetch profile for the existing session user
         await handleProfileFetch(session.user);
+        sessionCheckComplete.current = true;
       } catch (error) {
         console.error('Session check exception:', error);
         setIsLoading(false);
+        sessionCheckComplete.current = true;
       }
     };
 
@@ -151,18 +142,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       subscription.unsubscribe();
     };
-  }, []); // Removed user from dependency array to prevent re-fetching on user updates
+  }, []); // Removed navigate from dependency array to prevent re-fetching on navigation
 
   const handleSignIn = async (email: string, password: string) => {
     setIsLoading(true);
     try {
       console.log('Attempting sign in for:', email);
-      await signIn(email, password);
-      // Auth listener will handle setting user state and navigation
+      const result = await signIn(email, password);
+      // Auth listener will handle setting user state
+      console.log('Sign in success, waiting for auth context update');
+      return result;
     } catch (error) {
       console.error('Sign in handler error:', error);
-      // Error toast is handled within signIn service
       setIsLoading(false); // Ensure loading stops on error
+      throw error;
     }
   };
 
@@ -172,9 +165,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await signUp(email, password, role, name);
       toast.success('Account created successfully! Please check your email to verify your account.');
       navigate('/sign-in'); // Redirect to sign-in after successful sign-up request
-    } catch (error) {
+    } catch (error: any) {
       console.error('Sign up handler error:', error);
-      // Error toast is handled within signUp service
     } finally {
       setIsLoading(false);
     }
@@ -187,7 +179,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Auth listener handles state update and navigation
     } catch (error) {
       console.error('Sign out handler error:', error);
-      // Error toast is handled within signOut service
       // Force clear user state and navigate on error as a fallback
       setUser(null);
       navigate('/');

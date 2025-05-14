@@ -12,6 +12,8 @@ import CustomerDashboard from "./pages/CustomerDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import Payment from "./pages/Payment";
 import NotFound from "./pages/NotFound";
+import ProtectedRoute from "./components/ProtectedRoute";
+import Index from "./pages/Index";
 
 // Create a client
 const queryClient = new QueryClient({
@@ -29,12 +31,34 @@ const App = () => (
       <AuthProvider>
         <TooltipProvider>
           <Routes>
+            <Route path="/index" element={<Index />} />
             <Route path="/" element={<Home />} />
             <Route path="/sign-in" element={<SignIn />} />
             <Route path="/sign-up" element={<SignUp />} />
-            <Route path="/customer-dashboard" element={<CustomerDashboard />} />
-            <Route path="/admin-dashboard" element={<AdminDashboard />} />
-            <Route path="/payment" element={<Payment />} />
+            <Route 
+              path="/customer-dashboard" 
+              element={
+                <ProtectedRoute requiredRole="customer">
+                  <CustomerDashboard />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin-dashboard" 
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <AdminDashboard />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/payment" 
+              element={
+                <ProtectedRoute requiredRole="customer">
+                  <Payment />
+                </ProtectedRoute>
+              } 
+            />
             <Route path="*" element={<NotFound />} />
           </Routes>
           <Toaster />
