@@ -5,7 +5,8 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { corsHeaders } from "../_shared/cors.ts";
 
 const STRIPE_SECRET_KEY = Deno.env.get('STRIPE_SECRET_KEY') || '';
-const SITE_URL = Deno.env.get('SITE_URL') || 'https://lovable.dev';
+// Use a hardcoded APP_URL that always points to the actual app, not the Supabase function domain
+const APP_URL = Deno.env.get('SITE_URL') || 'https://lovable.dev';
 
 interface RequestBody {
   formulaId: string;
@@ -56,13 +57,10 @@ serve(async (req) => {
       apiVersion: '2023-10-16',
     });
     
-    // Get the origin from the request or use default
-    const origin = new URL(req.url).origin;
-    const redirectBase = origin === 'http://localhost:54321' ? SITE_URL : origin;
+    // Always use the APP_URL for redirects, not the request origin
+    console.log(`Using redirect base URL: ${APP_URL}`);
     
-    console.log(`Using redirect base URL: ${redirectBase}`);
-    
-    // Create a checkout session with absolute URLs
+    // Create a checkout session with absolute URLs to the application, not to the Supabase function domain
     const session = await stripeClient.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: [
@@ -79,9 +77,9 @@ serve(async (req) => {
         },
       ],
       mode: 'payment',
-      // Use complete URL with no query parameters - we'll handle in the success_url itself
-      success_url: `${redirectBase}/customer-dashboard/payment-success/${formulaId}`,
-      cancel_url: `${redirectBase}/customer-dashboard/payment-cancelled`,
+      // Use complete URLs to the app domain, not the function domain
+      success_url: `${APP_URL}/customer-dashboard/payment-success/${formulaId}`,
+      cancel_url: `${APP_URL}/customer-dashboard/payment-cancelled`,
     });
     
     console.log('Created checkout session:', session.id, 'with URL:', session.url);
