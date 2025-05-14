@@ -35,6 +35,7 @@ export const fetchUserProfile = async (authUser: any): Promise<User> => {
 
     // If profile exists, return user data with role from DB
     if (profileData) {
+      console.log("Profile found:", profileData);
       const user = {
         id: authUser.id,
         email: authUser.email || "",
@@ -44,6 +45,7 @@ export const fetchUserProfile = async (authUser: any): Promise<User> => {
       
       // Cache the profile
       profileCache.set(authUser.id, {user, timestamp: now});
+      console.log("User profile cached and returning:", user);
       
       return user;
     }
@@ -54,6 +56,7 @@ export const fetchUserProfile = async (authUser: any): Promise<User> => {
     
     // Cache the new profile
     profileCache.set(authUser.id, {user: newUser, timestamp: now});
+    console.log("New user profile created, cached and returning:", newUser);
     
     return newUser;
 
@@ -72,6 +75,8 @@ const createUserProfile = async (authUser: any): Promise<User> => {
   const name = authUser.user_metadata?.name || authUser.email?.split("@")[0] || "Customer " + authUser.id.substring(0, 8);
 
   try {
+    console.log(`Creating new profile for user ${authUser.id} with name "${name}" and role "${defaultRole}"`);
+    
     const { data: insertedProfile, error: insertError } = await supabase
       .from("profiles")
       .insert({
@@ -88,6 +93,8 @@ const createUserProfile = async (authUser: any): Promise<User> => {
       throw new Error(`Failed to create profile: ${insertError.message}`);
     }
 
+    console.log("Profile created successfully:", insertedProfile);
+    
     // Return the newly created user data
     return {
       id: authUser.id,

@@ -17,6 +17,50 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const navigate = useNavigate();
   const initialSessionChecked = useRef(false);
   const authChangeHandled = useRef(false);
+  const profileFetchTimeout = useRef<NodeJS.Timeout | null>(null);
+
+  // Function to handle profile fetch with timeout and retries
+  const handleProfileFetch = async (sessionUser: any, retryCount = 0) => {
+    // Clear any existing timeout
+    if (profileFetchTimeout.current) {
+      clearTimeout(profileFetchTimeout.current);
+      profileFetchTimeout.current = null;
+    }
+
+    try {
+      console.log(`Fetching user profile (attempt ${retryCount + 1})...`);
+      const userData = await fetchUserProfile(sessionUser);
+      setUser(userData);
+      console.log('User profile fetched successfully:', userData);
+      
+      // Use setTimeout to prevent potential state update issues during render
+      setTimeout(() => {
+        navigateBasedOnRole(navigate, userData);
+        setIsLoading(false);
+      }, 0);
+      
+      return true;
+    } catch (error: any) {
+      console.error(`Error fetching user profile (attempt ${retryCount + 1}):`, error);
+      
+      // If we haven't retried too many times, try again
+      if (retryCount < 2) {
+        console.log(`Retrying profile fetch in 1 second...`);
+        profileFetchTimeout.current = setTimeout(() => {
+          handleProfileFetch(sessionUser, retryCount + 1);
+        }, 1000);
+        return false;
+      }
+      
+      // After max retries, show error and sign out
+      toast.error(`Failed to load user profile. Please try logging in again.`);
+      await supabase.auth.signOut();
+      setUser(null);
+      setIsLoading(false);
+      navigate('/sign-in');
+      return false;
+    }
+  };
 
   useEffect(() => {
     // Initialize auth listener
@@ -35,26 +79,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (event === 'SIGNED_IN' && session?.user) {
         setIsLoading(true);
-        try {
-          // Fetch user profile (which now handles role determination)
-          const userData = await fetchUserProfile(session.user);
-          setUser(userData);
-          console.log('User profile fetched:', userData);
-
-          // Use setTimeout to prevent potential state update issues during render
-          setTimeout(() => {
-            navigateBasedOnRole(navigate, userData);
-            setIsLoading(false);
-          }, 0);
-        } catch (error: any) {
-          console.error('Error fetching user profile on SIGNED_IN:', error);
-          toast.error(`Failed to load user profile: ${error.message}. Signing out.`);
-          // If profile fetch fails critically, sign the user out
-          await supabase.auth.signOut();
-          setUser(null);
-          setIsLoading(false);
-          navigate('/'); // Redirect to home after sign out
-        }
+        handleProfileFetch(session.user);
       } else if (event === 'SIGNED_OUT') {
         console.log('User signed out');
         setUser(null);
@@ -74,13 +99,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.log('Other auth event:', event);
         // If user data might have changed, consider re-fetching profile
         if (event === 'USER_UPDATED' && session?.user && user) {
-            try {
-                const updatedUserData = await fetchUserProfile(session.user);
-                setUser(updatedUserData);
-            } catch (error) {
-                console.error('Error re-fetching profile on USER_UPDATED:', error);
-                // Decide how to handle this - maybe notify user?
-            }
+          try {
+            const updatedUserData = await fetchUserProfile(session.user);
+            setUser(updatedUserData);
+          } catch (error) {
+            console.error('Error re-fetching profile on USER_UPDATED:', error);
+          }
         }
       }
     });
@@ -109,23 +133,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         console.log('Existing session found for user:', session.user.id);
         // Fetch profile for the existing session user
-        try {
-          const userData = await fetchUserProfile(session.user);
-          setUser(userData);
-          console.log('User profile fetched for existing session:', userData);
-          // Don't navigate here automatically, let components decide or use initial route
-        } catch (profileError: any) {
-          console.error('Profile fetch error during session check:', profileError);
-          toast.error(`Failed to load profile for session: ${profileError.message}. Signing out.`);
-          await supabase.auth.signOut();
-          setUser(null);
-        }
+        await handleProfileFetch(session.user);
       } catch (error) {
         console.error('Session check exception:', error);
-      } finally {
-        // Ensure loading is set to false after session check completes or fails
-        // Use a small delay to avoid flicker if SIGNED_IN event follows immediately
-        setTimeout(() => setIsLoading(false), 50);
+        setIsLoading(false);
       }
     };
 
@@ -135,6 +146,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Cleanup subscription on component unmount
     return () => {
       console.log('Cleaning up auth subscription');
+      if (profileFetchTimeout.current) {
+        clearTimeout(profileFetchTimeout.current);
+      }
       subscription.unsubscribe();
     };
   }, []); // Removed user from dependency array to prevent re-fetching on user updates
@@ -150,7 +164,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Error toast is handled within signIn service
       setIsLoading(false); // Ensure loading stops on error
     }
-    // setIsLoading(false) // Removed from here, handled by auth listener or error case
   };
 
   const handleSignUp = async (email: string, password: string, role: UserRole, name: string) => {

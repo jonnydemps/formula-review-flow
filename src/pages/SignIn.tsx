@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Loader2, AtSign, KeyRound, AlertCircle } from 'lucide-react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/use-toast';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 
@@ -72,7 +72,7 @@ const SignIn: React.FC = () => {
   };
 
   // If still checking auth state, show loading
-  if (isLoading) {
+  if (isLoading && !isSubmitting) {
     return (
       <div className="flex flex-col min-h-screen">
         <Header />
@@ -80,6 +80,7 @@ const SignIn: React.FC = () => {
           <div className="text-center">
             <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-500" />
             <p className="text-gray-500">Checking authentication...</p>
+            <p className="text-xs text-gray-400 mt-2">If this takes too long, please refresh the page</p>
           </div>
         </main>
         <Footer />
@@ -144,7 +145,7 @@ const SignIn: React.FC = () => {
                 <Button 
                   type="submit" 
                   className="w-full bg-blue-600 hover:bg-blue-700"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || isLoading}
                 >
                   {isSubmitting ? (
                     <>
