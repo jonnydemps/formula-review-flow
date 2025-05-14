@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { User, AuthContextType, UserRole } from '@/types/auth';
@@ -15,11 +15,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
+  const initialSessionChecked = useRef(false);
+  const authChangeHandled = useRef(false);
 
   useEffect(() => {
     // Initialize auth listener
+    console.log('Setting up auth listener...');
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('Auth state changed:', event, session?.user?.id);
+      
+      // Skip duplicate INITIAL_SESSION events if we've already handled one
+      if (event === 'INITIAL_SESSION') {
+        if (authChangeHandled.current) {
+          console.log('Skipping duplicate INITIAL_SESSION event');
+          return;
+        }
+        authChangeHandled.current = true;
+      }
 
       if (event === 'SIGNED_IN' && session?.user) {
         setIsLoading(true);
@@ -48,6 +60,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(null);
         navigate('/'); // Redirect to home page on sign out
         setIsLoading(false);
+        // Reset the flag on sign out so we can handle future sign-ins
+        authChangeHandled.current = false;
       } else if (event === 'INITIAL_SESSION') {
         // Handle initial session load if needed, or rely on checkSession
         console.log('Initial session event');
@@ -71,10 +85,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     });
 
-    // Check for existing session on initial load
+    // Check for existing session on initial load, but only once
     const checkSession = async () => {
+      if (initialSessionChecked.current) return;
+      
       try {
         console.log('Checking for existing session');
+        initialSessionChecked.current = true;
+        
         const { data: { session }, error } = await supabase.auth.getSession();
 
         if (error) {
@@ -116,9 +134,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Cleanup subscription on component unmount
     return () => {
+      console.log('Cleaning up auth subscription');
       subscription.unsubscribe();
     };
-  }, [navigate, user]); // Added user to dependency array for USER_UPDATED re-fetch logic
+  }, []); // Removed user from dependency array to prevent re-fetching on user updates
 
   const handleSignIn = async (email: string, password: string) => {
     setIsLoading(true);

@@ -2,9 +2,22 @@
 import { User, UserRole } from "@/types/auth";
 import { supabase } from "@/integrations/supabase/client";
 
+// Cache to store recently fetched profiles to avoid redundant DB calls
+const profileCache = new Map<string, {user: User, timestamp: number}>();
+const CACHE_TTL = 60 * 1000; // 1 minute cache
+
 // Fetch user profile and role from the database
 export const fetchUserProfile = async (authUser: any): Promise<User> => {
-  // console.log("Fetching profile for user:", authUser.id);
+  // Check cache first
+  const cachedProfile = profileCache.get(authUser.id);
+  const now = Date.now();
+  
+  if (cachedProfile && (now - cachedProfile.timestamp < CACHE_TTL)) {
+    console.log("Using cached profile for:", authUser.id);
+    return cachedProfile.user;
+  }
+
+  console.log("Fetching profile for user:", authUser.id);
 
   try {
     // Fetch profile using maybeSingle() to handle non-existent profiles gracefully
@@ -22,21 +35,32 @@ export const fetchUserProfile = async (authUser: any): Promise<User> => {
 
     // If profile exists, return user data with role from DB
     if (profileData) {
-      return {
+      const user = {
         id: authUser.id,
         email: authUser.email || "",
         role: profileData.role as UserRole,
         name: profileData.name || authUser.user_metadata?.name || authUser.email?.split("@")[0] || "User",
       };
+      
+      // Cache the profile
+      profileCache.set(authUser.id, {user, timestamp: now});
+      
+      return user;
     }
 
-    // If no profile exists, create one with a default role (
-    // console.log("No profile found, creating a default profile");
+    // If no profile exists, create one with a default role
+    console.log("No profile found, creating a default profile");
     const newUser = await createUserProfile(authUser);
+    
+    // Cache the new profile
+    profileCache.set(authUser.id, {user: newUser, timestamp: now});
+    
     return newUser;
 
   } catch (error: any) {
     console.error("Profile service error:", error);
+    // Clear cache on error
+    profileCache.delete(authUser.id);
     // Propagate the error to be handled by the caller (e.g., AuthContext)
     throw new Error(`Profile service failed: ${error.message}`);
   }
@@ -45,7 +69,7 @@ export const fetchUserProfile = async (authUser: any): Promise<User> => {
 // Create a user profile in the database
 const createUserProfile = async (authUser: any): Promise<User> => {
   const defaultRole: UserRole = "customer"; // Default role for new users
-  const name = authUser.user_metadata?.name || authUser.email?.split("@")[0] || "User";
+  const name = authUser.user_metadata?.name || authUser.email?.split("@")[0] || "Customer " + authUser.id.substring(0, 8);
 
   try {
     const { data: insertedProfile, error: insertError } = await supabase
@@ -78,4 +102,3 @@ const createUserProfile = async (authUser: any): Promise<User> => {
     throw new Error(`Profile creation failed: ${error.message}`);
   }
 };
-
