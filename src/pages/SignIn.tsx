@@ -26,6 +26,16 @@ const SignIn = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
 
+  // When component mounts, clear any saved credentials in the form
+  useEffect(() => {
+    // Reset any autofilled values by browser
+    const emailInput = document.querySelector('input[name="email"]') as HTMLInputElement;
+    const passwordInput = document.querySelector('input[name="password"]') as HTMLInputElement;
+    
+    if (emailInput) emailInput.value = '';
+    if (passwordInput) passwordInput.value = '';
+  }, []);
+
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -98,7 +108,11 @@ const SignIn = () => {
           )}
 
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <form 
+              onSubmit={form.handleSubmit(onSubmit)} 
+              className="space-y-4"
+              autoComplete="off" // Disable form autocomplete
+            >
               <FormField
                 control={form.control}
                 name="email"
@@ -109,7 +123,7 @@ const SignIn = () => {
                       <Input 
                         placeholder="you@example.com" 
                         type="email" 
-                        autoComplete="email"
+                        autoComplete="new-email" // Prevent autofill
                         disabled={isSubmitting}
                         {...field}
                       />
@@ -129,7 +143,7 @@ const SignIn = () => {
                       <Input 
                         placeholder="••••••••" 
                         type="password" 
-                        autoComplete="current-password"
+                        autoComplete="new-password" // Prevent autofill
                         disabled={isSubmitting}
                         {...field}
                       />
