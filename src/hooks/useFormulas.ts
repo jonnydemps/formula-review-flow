@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getCustomerFormulas, getAllFormulas, deleteFormula } from '@/services/formulaService';
-import { toast } from 'sonner';
+import { showSuccessToast, showErrorToast } from '@/utils/toastUtils';
 
 export const useCustomerFormulas = (customerId?: string) => {
   return useQuery({
@@ -10,6 +10,15 @@ export const useCustomerFormulas = (customerId?: string) => {
     queryFn: () => customerId ? getCustomerFormulas(customerId) : Promise.resolve([]),
     enabled: !!customerId,
     refetchOnWindowFocus: false,
+    retry: (failureCount, error) => {
+      // Retry up to 3 times for network errors
+      if (failureCount < 3) {
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        return message.toLowerCase().includes('network') || message.toLowerCase().includes('fetch');
+      }
+      return false;
+    },
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 };
 
@@ -18,6 +27,14 @@ export const useAllFormulas = () => {
     queryKey: ['formulas', 'all'],
     queryFn: getAllFormulas,
     refetchOnWindowFocus: false,
+    retry: (failureCount, error) => {
+      if (failureCount < 3) {
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        return message.toLowerCase().includes('network') || message.toLowerCase().includes('fetch');
+      }
+      return false;
+    },
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 };
 
@@ -28,12 +45,12 @@ export const useDeleteFormula = () => {
     mutationFn: ({ formulaId, filePath }: { formulaId: string; filePath?: string }) =>
       deleteFormula(formulaId, filePath),
     onSuccess: () => {
-      toast.success('Formula deleted successfully');
+      showSuccessToast('Formula deleted successfully');
       queryClient.invalidateQueries({ queryKey: ['formulas'] });
     },
     onError: (error: any) => {
       console.error('Delete formula error:', error);
-      toast.error(error.message || 'Failed to delete formula');
+      showErrorToast(error, 'Delete Failed');
     },
   });
 };

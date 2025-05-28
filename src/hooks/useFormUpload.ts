@@ -2,7 +2,8 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { uploadFormulaFile, createFormula } from '@/services/formulaService';
-import { toast } from 'sonner';
+import { handleUploadError } from '@/utils/errorUtils';
+import { showSuccessToast, showErrorToast } from '@/utils/toastUtils';
 
 interface UploadProgress {
   isUploading: boolean;
@@ -42,13 +43,14 @@ export const useFormUpload = (customerId?: string) => {
       return formula;
     },
     onSuccess: () => {
-      toast.success('Formula uploaded successfully!');
+      showSuccessToast('Formula uploaded successfully!');
       queryClient.invalidateQueries({ queryKey: ['formulas'] });
       setUploadProgress({ isUploading: false, progress: 0 });
     },
     onError: (error: any) => {
       console.error('Upload error:', error);
-      toast.error(error.message || 'Failed to upload formula');
+      const errorMessage = handleUploadError(error);
+      showErrorToast(errorMessage, 'Upload Failed');
       setUploadProgress({ isUploading: false, progress: 0 });
     },
   });

@@ -1,8 +1,9 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { User, UserRole } from '@/types/auth';
 import { getDefaultRole } from '@/utils/authUtils';
 import { handleAuthError } from '@/utils/errorUtils';
-import { toast } from 'sonner';
+import { showSuccessToast, showErrorToast } from '@/utils/toastUtils';
 import { Session } from '@supabase/supabase-js';
 
 // Define the success response type
@@ -45,7 +46,7 @@ export const signIn = async (email: string, password: string): Promise<SignInRes
     };
 
     console.log('Sign in successful:', userData.id);
-    toast.success('Successfully signed in');
+    showSuccessToast('Successfully signed in');
     return { 
       data: {
         user: userData,
@@ -56,7 +57,7 @@ export const signIn = async (email: string, password: string): Promise<SignInRes
     console.error('Sign in error:', error);
     
     const errorMessage = handleAuthError(error);
-    toast.error(errorMessage);
+    showErrorToast(error, 'Sign In Failed');
     
     return { error: { message: errorMessage } };
   }
@@ -113,7 +114,7 @@ export const signUp = async (email: string, password: string, role: UserRole, na
       // Continue with the process, don't block signup
     }
     
-    toast.success('Account created successfully');
+    showSuccessToast('Account created successfully');
     
     return authData;
   } catch (error: any) {
@@ -121,11 +122,11 @@ export const signUp = async (email: string, password: string, role: UserRole, na
     
     // More user-friendly error messages
     if (error.message?.includes('already registered')) {
-      toast.error('This email is already registered. Please sign in instead.');
+      showErrorToast('This email is already registered. Please sign in instead.', 'Registration Failed');
     } else if (error.message?.includes('password')) {
-      toast.error('Password error: ' + error.message);
+      showErrorToast('Password error: ' + error.message, 'Registration Failed');
     } else {
-      toast.error('Failed to create account. Please try again.');
+      showErrorToast(error, 'Registration Failed');
     }
     throw error;
   }
@@ -134,10 +135,10 @@ export const signUp = async (email: string, password: string, role: UserRole, na
 export const signOut = async () => {
   try {
     await supabase.auth.signOut();
-    toast.success('Signed out successfully');
+    showSuccessToast('Signed out successfully');
   } catch (error) {
     console.error('Sign out error:', error);
-    toast.error('Failed to sign out');
+    showErrorToast(error, 'Sign Out Failed');
     throw error;
   }
 };
