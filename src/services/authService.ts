@@ -1,6 +1,7 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { User, UserRole } from '@/types/auth';
+import { getDefaultRole } from '@/utils/authUtils';
+import { handleAuthError } from '@/utils/errorUtils';
 import { toast } from 'sonner';
 import { Session } from '@supabase/supabase-js';
 
@@ -32,8 +33,8 @@ export const signIn = async (email: string, password: string): Promise<SignInRes
 
     if (error) throw error;
 
-    // Determine the role - special case for admin
-    const role: UserRole = email === 'john-dempsey@hotmail.co.uk' ? 'admin' : 'customer';
+    // Determine the role
+    const role = getDefaultRole(email);
     
     // Since this is a success case, we need to adapt the Supabase response to match our SignInSuccess type
     const userData: User = {
@@ -54,18 +55,10 @@ export const signIn = async (email: string, password: string): Promise<SignInRes
   } catch (error: any) {
     console.error('Sign in error:', error);
     
-    // More user-friendly error messages
-    if (error.message?.includes('Invalid login credentials')) {
-      toast.error('Invalid email or password. Please try again.');
-    } else if (error.message?.includes('Email not confirmed')) {
-      toast.error('Please confirm your email before signing in.');
-    } else if (error.message?.includes('Invalid API key')) {
-      toast.error('Authentication service configuration error. Please contact support.');
-    } else {
-      toast.error(error.message || 'Failed to sign in');
-    }
+    const errorMessage = handleAuthError(error);
+    toast.error(errorMessage);
     
-    return { error: { message: error.message || 'Failed to sign in' } };
+    return { error: { message: errorMessage } };
   }
 };
 

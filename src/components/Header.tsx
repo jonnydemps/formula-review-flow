@@ -1,9 +1,10 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Menu, X, TestTube } from 'lucide-react';
 import { useScrolled } from '@/hooks/useScrolled';
+import { useRouteChange } from '@/hooks/useRouteChange';
 import DesktopNavigation from '@/components/header/DesktopNavigation';
 import MobileMenu from '@/components/header/MobileMenu';
 
@@ -11,12 +12,9 @@ const Header: React.FC = () => {
   const { user, signOut } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const isScrolled = useScrolled(10);
-  const location = useLocation();
 
   // Close menu when route changes
-  useEffect(() => {
-    setIsMenuOpen(false);
-  }, [location.pathname]);
+  useRouteChange(() => setIsMenuOpen(false));
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
   const closeMenu = () => setIsMenuOpen(false);

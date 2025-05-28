@@ -2,6 +2,7 @@ import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { UserRole } from '@/types/auth';
+import { isAdminEmail, shouldForceAdminRole } from '@/utils/authUtils';
 import { Loader2 } from 'lucide-react';
 
 interface ProtectedRouteProps {
@@ -33,11 +34,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     return <Navigate to="/sign-in" replace />;
   }
 
-  // Double-check admin status by email
-  const isAdminByEmail = user.email === 'john-dempsey@hotmail.co.uk';
-  
-  // If user should be admin by email but role doesn't match, force admin role
-  if (isAdminByEmail && user.role !== 'admin') {
+  // Check if user should be admin by email but role doesn't match
+  if (shouldForceAdminRole(user.email, user.role)) {
     console.log('Detected admin by email but role mismatch, redirecting to admin dashboard');
     return <Navigate to="/admin-dashboard" replace />;
   }
@@ -47,7 +45,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     console.log(`Protected route: User does not have required role "${requiredRole}", redirecting`);
     
     // Special case - if admin by email, always go to admin dashboard
-    if (isAdminByEmail) {
+    if (isAdminEmail(user.email)) {
       return <Navigate to="/admin-dashboard" replace />;
     }
     
