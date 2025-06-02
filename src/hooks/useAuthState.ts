@@ -9,8 +9,13 @@ export const useAuthState = () => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const initialCheckDone = useRef(false);
+  const subscriptionRef = useRef<any>(null);
 
   useEffect(() => {
+    // Prevent multiple initializations
+    if (initialCheckDone.current) return;
+    initialCheckDone.current = true;
+
     console.log('Setting up auth listener...');
     
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
@@ -44,11 +49,10 @@ export const useAuthState = () => {
       }
     });
 
+    subscriptionRef.current = subscription;
+
     // Check for existing session on initial load
     const checkInitialSession = async () => {
-      if (initialCheckDone.current) return;
-      initialCheckDone.current = true;
-      
       try {
         console.log('Checking for existing session');
         const { data: { session }, error } = await supabase.auth.getSession();
@@ -88,9 +92,12 @@ export const useAuthState = () => {
 
     return () => {
       console.log('Cleaning up auth subscription');
-      subscription.unsubscribe();
+      if (subscriptionRef.current) {
+        subscriptionRef.current.unsubscribe();
+        subscriptionRef.current = null;
+      }
     };
-  }, []);
+  }, []); // Empty dependency array to ensure this only runs once
 
   return { user, isLoading, setUser, setIsLoading };
 };

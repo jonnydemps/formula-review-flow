@@ -14,15 +14,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const navigate = useNavigate();
 
   const handleSignIn = async (email: string, password: string): Promise<SignInResponse> => {
-    setIsLoading(true);
+    console.log('Attempting sign in for:', email);
     try {
-      console.log('Attempting sign in for:', email);
       const result = await signIn(email, password);
       console.log('Sign in success, waiting for auth context update');
       return result;
     } catch (error) {
       console.error('Sign in handler error:', error);
-      setIsLoading(false);
       throw error;
     }
   };

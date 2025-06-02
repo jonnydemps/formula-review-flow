@@ -6,6 +6,8 @@ import { Loader2 } from 'lucide-react';
 const Index = () => {
   const { user, isLoading } = useAuth();
 
+  console.log('Index page - isLoading:', isLoading, 'user:', user?.email, 'role:', user?.role);
+
   // Show loading state while checking authentication
   if (isLoading) {
     return (
