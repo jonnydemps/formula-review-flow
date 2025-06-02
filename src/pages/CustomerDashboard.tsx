@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -21,12 +21,8 @@ const CustomerDashboard: React.FC = () => {
   const [showUploader, setShowUploader] = useState(false);
   const queryClient = useQueryClient();
 
-  console.log('Dashboard rendering, auth state:', { user, authLoading });
-
   // Protect route - redirect if not authenticated or not a customer
   useEffect(() => {
-    console.log('Auth check effect running, user:', user, 'loading:', authLoading);
-    
     if (!authLoading && !user) {
       console.log('User not authenticated, redirecting to sign-in');
       navigate('/sign-in');
@@ -68,8 +64,9 @@ const CustomerDashboard: React.FC = () => {
   const { data: formulas = [], isLoading: formulasLoading, refetch } = useQuery({
     queryKey: ['formulas', user?.id],
     queryFn: getCustomerFormulas,
-    enabled: !!user,
-    retry: 1
+    enabled: !!user && !authLoading,
+    retry: 1,
+    staleTime: 30000 // Cache for 30 seconds to reduce unnecessary requests
   });
 
   // File upload mutation
