@@ -26,6 +26,14 @@ const SignIn = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
 
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+    },
+  });
+
   // When component mounts, clear any saved credentials in the form
   useEffect(() => {
     // Reset any autofilled values by browser
@@ -35,14 +43,6 @@ const SignIn = () => {
     if (emailInput) emailInput.value = '';
     if (passwordInput) passwordInput.value = '';
   }, []);
-
-  const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      email: '',
-      password: '',
-    },
-  });
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -88,9 +88,16 @@ const SignIn = () => {
     );
   }
 
-  // If we're authenticated, don't render the form at all
+  // If we're authenticated, show loading while redirecting
   if (user) {
-    return null; // useEffect will redirect
+    return (
+      <div className="h-screen flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin mx-auto text-blue-500 mb-4" />
+          <p className="text-gray-500">Redirecting...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
