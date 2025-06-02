@@ -17,6 +17,7 @@ export type Database = {
           file_path: string
           id: string
           original_filename: string
+          parsed_data: Json | null
           quote_amount: number | null
           quote_requested_at: string | null
           status: Database["public"]["Enums"]["formula_status"] | null
@@ -29,6 +30,7 @@ export type Database = {
           file_path: string
           id?: string
           original_filename: string
+          parsed_data?: Json | null
           quote_amount?: number | null
           quote_requested_at?: string | null
           status?: Database["public"]["Enums"]["formula_status"] | null
@@ -41,6 +43,7 @@ export type Database = {
           file_path?: string
           id?: string
           original_filename?: string
+          parsed_data?: Json | null
           quote_amount?: number | null
           quote_requested_at?: string | null
           status?: Database["public"]["Enums"]["formula_status"] | null
