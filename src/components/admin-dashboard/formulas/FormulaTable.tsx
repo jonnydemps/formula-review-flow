@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
 import FormulaActions from './FormulaActions';
@@ -13,16 +14,18 @@ interface FormulaTableProps {
 const FormulaTable: React.FC<FormulaTableProps> = ({ formulas, onProvideQuote, onRefresh }) => {
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
   const [selectedFormula, setSelectedFormula] = useState<any>(null);
-  const [quoteDialogs, setQuoteDialogs] = useState<{ [key: string]: boolean }>({});
-  const [quoteAmounts, setQuoteAmounts] = useState<{ [key: string]: string }>({});
 
   const handleReview = (formula: any) => {
+    console.log('Opening enhanced review dialog for formula:', formula.id);
     setSelectedFormula(formula);
     setReviewDialogOpen(true);
   };
 
   const handleReviewComplete = () => {
-    onRefresh();
+    console.log('Review completed, refreshing data');
+    if (onRefresh) {
+      onRefresh();
+    }
     setReviewDialogOpen(false);
     setSelectedFormula(null);
   };
@@ -64,6 +67,7 @@ const FormulaTable: React.FC<FormulaTableProps> = ({ formulas, onProvideQuote, o
                     formula={formula} 
                     onProvideQuote={onProvideQuote} 
                     onRefresh={onRefresh}
+                    onReview={() => handleReview(formula)}
                   />
                 </TableCell>
               </TableRow>
@@ -71,6 +75,8 @@ const FormulaTable: React.FC<FormulaTableProps> = ({ formulas, onProvideQuote, o
           </TableBody>
         </Table>
       </div>
+      
+      {/* Enhanced Formula Review Dialog */}
       <EnhancedFormulaReviewDialog
         isOpen={reviewDialogOpen}
         onClose={() => setReviewDialogOpen(false)}

@@ -21,7 +21,6 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { FileText, DollarSign, Trash2 } from 'lucide-react';
-import FormulaReviewDialog from './FormulaReviewDialog';
 import { deleteFormula } from '@/services/formulaService';
 import { toast } from 'sonner';
 
@@ -29,12 +28,17 @@ interface FormulaActionsProps {
   formula: any;
   onProvideQuote: (id: string, amount: number) => void;
   onRefresh?: () => void;
+  onReview?: () => void;
 }
 
-const FormulaActions: React.FC<FormulaActionsProps> = ({ formula, onProvideQuote, onRefresh }) => {
+const FormulaActions: React.FC<FormulaActionsProps> = ({ 
+  formula, 
+  onProvideQuote, 
+  onRefresh,
+  onReview 
+}) => {
   const [isQuoteDialogOpen, setIsQuoteDialogOpen] = useState(false);
   const [quoteAmount, setQuoteAmount] = useState<string>('');
-  const [isReviewDialogOpen, setIsReviewDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -48,12 +52,6 @@ const FormulaActions: React.FC<FormulaActionsProps> = ({ formula, onProvideQuote
     onProvideQuote(formula.id, amount);
     setIsQuoteDialogOpen(false);
     setQuoteAmount('');
-  };
-
-  const handleReviewComplete = () => {
-    if (onRefresh) {
-      onRefresh();
-    }
   };
 
   const handleDelete = async () => {
@@ -74,7 +72,7 @@ const FormulaActions: React.FC<FormulaActionsProps> = ({ formula, onProvideQuote
 
   return (
     <div className="flex gap-2">
-      <Button size="sm" variant="outline" onClick={() => setIsReviewDialogOpen(true)}>
+      <Button size="sm" variant="outline" onClick={onReview}>
         <FileText className="h-4 w-4 mr-1" />
         Review
       </Button>
@@ -116,14 +114,6 @@ const FormulaActions: React.FC<FormulaActionsProps> = ({ formula, onProvideQuote
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      
-      {/* Review Dialog */}
-      <FormulaReviewDialog 
-        isOpen={isReviewDialogOpen}
-        onClose={() => setIsReviewDialogOpen(false)}
-        formula={formula}
-        onReviewComplete={handleReviewComplete}
-      />
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>

@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { User } from '@/types/auth';
 import { supabase } from '@/integrations/supabase/client';
 import { handleProfileFetchWithRetry } from '@/utils/profileFetcher';
@@ -8,90 +8,122 @@ import { clearProfileCache } from '@/utils/profileCache';
 export const useAuthState = () => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const initialCheckDone = useRef(false);
+  const initializationRef = useRef(false);
   const subscriptionRef = useRef<any>(null);
+  const cleanupRef = useRef(false);
+
+  // Memoize setUser to prevent unnecessary re-renders
+  const setUserCallback = useCallback((userData: User | null) => {
+    setUser(userData);
+  }, []);
+
+  // Memoize setIsLoading to prevent unnecessary re-renders
+  const setIsLoadingCallback = useCallback((loading: boolean) => {
+    setIsLoading(loading);
+  }, []);
 
   useEffect(() => {
     // Prevent multiple initializations
-    if (initialCheckDone.current) return;
-    initialCheckDone.current = true;
-
-    console.log('Setting up auth listener...');
+    if (initializationRef.current || cleanupRef.current) {
+      console.log('Auth already initialized or cleaning up, skipping...');
+      return;
+    }
     
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth state changed:', event, session?.user?.id);
-      
-      if (event === 'SIGNED_IN' && session?.user) {
-        setIsLoading(true);
-        try {
-          const userData = await handleProfileFetchWithRetry(session.user);
-          if (userData) {
-            console.log('User profile fetched successfully:', userData);
-            setUser(userData);
-          }
-        } catch (error) {
-          console.error('Profile fetch failed, signing out:', error);
-          await supabase.auth.signOut();
-          setUser(null);
-        } finally {
-          setIsLoading(false);
-        }
-      } else if (event === 'SIGNED_OUT') {
-        console.log('User signed out');
-        setUser(null);
-        clearProfileCache();
-        setIsLoading(false);
-      } else if (event === 'INITIAL_SESSION') {
-        console.log('Initial session event');
-        if (!session?.user) {
-          setIsLoading(false);
-        }
-      }
-    });
-
-    subscriptionRef.current = subscription;
-
-    // Check for existing session on initial load
-    const checkInitialSession = async () => {
+    initializationRef.current = true;
+    console.log('Setting up auth listener (single initialization)...');
+    
+    const setupAuth = async () => {
       try {
+        // Set up auth state listener
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+          console.log('Auth state changed:', event, session?.user?.id);
+          
+          if (event === 'SIGNED_IN' && session?.user) {
+            setIsLoadingCallback(true);
+            try {
+              const userData = await handleProfileFetchWithRetry(session.user);
+              if (userData && !cleanupRef.current) {
+                console.log('User profile fetched successfully:', userData);
+                setUserCallback(userData);
+              }
+            } catch (error) {
+              console.error('Profile fetch failed, signing out:', error);
+              if (!cleanupRef.current) {
+                await supabase.auth.signOut();
+                setUserCallback(null);
+              }
+            } finally {
+              if (!cleanupRef.current) {
+                setIsLoadingCallback(false);
+              }
+            }
+          } else if (event === 'SIGNED_OUT') {
+            console.log('User signed out');
+            if (!cleanupRef.current) {
+              setUserCallback(null);
+              clearProfileCache();
+              setIsLoadingCallback(false);
+            }
+          } else if (event === 'INITIAL_SESSION') {
+            console.log('Initial session event');
+            if (!session?.user && !cleanupRef.current) {
+              setIsLoadingCallback(false);
+            }
+          }
+        });
+
+        subscriptionRef.current = subscription;
+
+        // Check for existing session
         console.log('Checking for existing session');
         const { data: { session }, error } = await supabase.auth.getSession();
 
         if (error) {
           console.error('Session check error:', error);
-          setIsLoading(false);
+          if (!cleanupRef.current) {
+            setIsLoadingCallback(false);
+          }
           return;
         }
 
         if (!session) {
           console.log('No active session found');
-          setIsLoading(false);
+          if (!cleanupRef.current) {
+            setIsLoadingCallback(false);
+          }
           return;
         }
 
         console.log('Existing session found for user:', session.user.id);
         try {
           const userData = await handleProfileFetchWithRetry(session.user);
-          if (userData) {
+          if (userData && !cleanupRef.current) {
             console.log('Initial session profile loaded:', userData);
-            setUser(userData);
+            setUserCallback(userData);
           }
         } catch (error) {
           console.error('Initial session profile fetch failed:', error);
-          await supabase.auth.signOut();
+          if (!cleanupRef.current) {
+            await supabase.auth.signOut();
+          }
         } finally {
-          setIsLoading(false);
+          if (!cleanupRef.current) {
+            setIsLoadingCallback(false);
+          }
         }
       } catch (error) {
-        console.error('Session check exception:', error);
-        setIsLoading(false);
+        console.error('Auth setup error:', error);
+        if (!cleanupRef.current) {
+          setIsLoadingCallback(false);
+        }
       }
     };
 
-    checkInitialSession();
+    setupAuth();
 
     return () => {
       console.log('Cleaning up auth subscription');
+      cleanupRef.current = true;
       if (subscriptionRef.current) {
         subscriptionRef.current.unsubscribe();
         subscriptionRef.current = null;
@@ -99,5 +131,10 @@ export const useAuthState = () => {
     };
   }, []); // Empty dependency array to ensure this only runs once
 
-  return { user, isLoading, setUser, setIsLoading };
+  return { 
+    user, 
+    isLoading, 
+    setUser: setUserCallback, 
+    setIsLoading: setIsLoadingCallback 
+  };
 };
