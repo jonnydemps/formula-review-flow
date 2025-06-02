@@ -8,11 +8,14 @@ export interface Ingredient {
   percentage?: string;
   compliant: boolean;
   notes?: string;
+  casNumber?: string;
 }
 
 export interface ReviewData {
   reviewNotes: string;
   ingredients: Ingredient[];
+  productName?: string;
+  formulaNumber?: string;
 }
 
 // Save review data for a formula
@@ -57,15 +60,18 @@ export const getReviewForFormula = async (formulaId: string) => {
 export const ensureReviewDataFormat = (data: any): ReviewData => {
   return {
     reviewNotes: data?.reviewNotes || '',
+    productName: data?.productName || '',
+    formulaNumber: data?.formulaNumber || '',
     ingredients: Array.isArray(data?.ingredients) 
       ? data.ingredients.map((ing: any) => ({
           id: ing?.id || String(Date.now()),
           name: ing?.name || '',
           percentage: ing?.percentage,
           compliant: typeof ing?.compliant === 'boolean' ? ing.compliant : true,
-          notes: ing?.notes || ''
+          notes: ing?.notes || '',
+          casNumber: ing?.casNumber || ''
         }))
-      : [{ id: '1', name: '', percentage: '', compliant: true, notes: '' }]
+      : [{ id: '1', name: '', percentage: '', compliant: true, notes: '', casNumber: '' }]
   };
 };
 
@@ -99,6 +105,26 @@ export const generateReport = async (formulaId: string, specialistId: string) =>
     return data;
   } catch (error) {
     console.error('Error generating report:', error);
+    throw error;
+  }
+};
+
+// Parse and save formula data from Excel
+export const saveFormulaParsedData = async (formulaId: string, parsedData: any) => {
+  try {
+    const { data, error } = await supabase
+      .from('formulas')
+      .update({
+        parsed_data: parsedData as unknown as Json
+      })
+      .eq('id', formulaId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error saving parsed formula data:', error);
     throw error;
   }
 };
