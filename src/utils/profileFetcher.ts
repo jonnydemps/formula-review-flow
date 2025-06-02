@@ -41,7 +41,8 @@ export const handleProfileFetchWithRetry = async (
       return handleProfileFetchWithRetry(sessionUser, retryCount + 1, maxRetries);
     }
     
-    // After max retries, show error
+    // After max retries, show error and throw
+    console.error('Max retries reached, throwing error');
     toast.error(`Failed to load user profile. Please try logging in again.`);
     throw error;
   }
