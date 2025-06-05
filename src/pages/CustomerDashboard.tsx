@@ -6,12 +6,14 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button'; 
-import { RefreshCcw, Loader2 } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { RefreshCcw, Loader2, BarChart3 } from 'lucide-react';
 import { toast } from 'sonner';
 import { uploadFormulaFile, createFormula } from '@/services/formulaService';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import FormulaList from '@/components/customer-dashboard/FormulaList';
 import UploadSection from '@/components/customer-dashboard/UploadSection';
+import DashboardAnalytics from '@/components/customer-dashboard/DashboardAnalytics';
 import { supabase } from '@/integrations/supabase/client';
 
 const CustomerDashboard: React.FC = () => {
@@ -145,7 +147,7 @@ const CustomerDashboard: React.FC = () => {
               <div>
                 <h1 className="text-3xl font-bold">Customer Dashboard</h1>
                 <p className="text-gray-600">
-                  Upload formulas, track reviews, and download reports
+                  Upload formulas, track reviews, and analyze your submission data
                 </p>
               </div>
               <div className="mt-4 md:mt-0">
@@ -164,21 +166,47 @@ const CustomerDashboard: React.FC = () => {
               onShowUploader={() => setShowUploader(true)}
             />
             
-            <Card>
-              <CardHeader>
-                <CardTitle>Your Formulas</CardTitle>
-                <CardDescription>
-                  Track the status of your formula reviews
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <FormulaList 
-                  formulas={formulas}
-                  isLoading={formulasLoading}
-                  onAcceptQuote={handleAcceptQuote}
-                />
-              </CardContent>
-            </Card>
+            <Tabs defaultValue="formulas" className="mt-6">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="formulas">Your Formulas</TabsTrigger>
+                <TabsTrigger value="analytics">
+                  <BarChart3 className="h-4 w-4 mr-2" />
+                  Analytics
+                </TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="formulas">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Your Formulas</CardTitle>
+                    <CardDescription>
+                      Track the status of your formula reviews
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <FormulaList 
+                      formulas={formulas}
+                      isLoading={formulasLoading}
+                      onAcceptQuote={handleAcceptQuote}
+                    />
+                  </CardContent>
+                </Card>
+              </TabsContent>
+              
+              <TabsContent value="analytics">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Dashboard Analytics</CardTitle>
+                    <CardDescription>
+                      Visual insights into your formula submission and review progress
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <DashboardAnalytics formulas={formulas} />
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
           </div>
         </div>
       </main>
