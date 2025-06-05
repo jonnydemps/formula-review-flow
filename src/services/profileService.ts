@@ -2,11 +2,11 @@
 import { User, UserRole } from "@/types/auth";
 import { supabase } from "@/integrations/supabase/client";
 
-// Cache to store recently fetched profiles to avoid redundant DB calls
+// Simplified cache - just store the profile data
 const profileCache = new Map<string, {user: User, timestamp: number}>();
 const CACHE_TTL = 60 * 1000; // 1 minute cache
 
-// Fetch user profile and role from the database
+// Main profile fetch function
 export const fetchUserProfile = async (authUser: any): Promise<User> => {
   // Check cache first
   const cachedProfile = profileCache.get(authUser.id);
@@ -17,11 +17,11 @@ export const fetchUserProfile = async (authUser: any): Promise<User> => {
     return cachedProfile.user;
   }
 
-  console.log("Fetching profile for user:", authUser.id);
+  console.log("Fetching fresh profile for user:", authUser.id);
 
-  // Special case for the admin account - return immediately without DB call
+  // Special case for admin account
   if (authUser.email === 'john-dempsey@hotmail.co.uk') {
-    console.log("Admin account detected, creating admin user object");
+    console.log("Admin account detected, setting admin role");
     const adminUser = {
       id: authUser.id,
       email: authUser.email,
@@ -32,14 +32,14 @@ export const fetchUserProfile = async (authUser: any): Promise<User> => {
     // Cache the admin profile
     profileCache.set(authUser.id, {user: adminUser, timestamp: now});
     
-    // Asynchronously ensure admin profile exists in database (don't wait for it)
-    updateAdminProfileAsync(authUser);
+    // Asynchronously ensure admin profile exists in database
+    ensureAdminProfileExists(authUser);
     
     return adminUser;
   }
 
+  // For regular users, fetch from database
   try {
-    // For non-admin users, continue with the regular flow
     const { data: profileData, error: profileError } = await supabase
       .from("profiles")
       .select("role, name")
@@ -51,7 +51,7 @@ export const fetchUserProfile = async (authUser: any): Promise<User> => {
       throw new Error(`Failed to fetch profile: ${profileError.message}`);
     }
 
-    // If profile exists, return user data with role from DB
+    // If profile exists, return user data
     if (profileData) {
       console.log("Profile found:", profileData);
       const user = {
@@ -63,33 +63,30 @@ export const fetchUserProfile = async (authUser: any): Promise<User> => {
       
       // Cache the profile
       profileCache.set(authUser.id, {user, timestamp: now});
-      console.log("User profile cached and returning:", user);
       
       return user;
     }
 
-    // If no profile exists, create one with a default role
-    console.log("No profile found, creating a default profile");
+    // If no profile exists, create one
+    console.log("No profile found, creating default profile");
     const newUser = await createUserProfile(authUser);
     
     // Cache the new profile
     profileCache.set(authUser.id, {user: newUser, timestamp: now});
-    console.log("New user profile created, cached and returning:", newUser);
     
     return newUser;
 
   } catch (error: any) {
     console.error("Profile service error:", error);
-    // Clear cache on error
-    profileCache.delete(authUser.id);
+    profileCache.delete(authUser.id); // Clear cache on error
     throw new Error(`Profile service failed: ${error.message}`);
   }
 };
 
-// Async function to update admin profile in background
-const updateAdminProfileAsync = async (authUser: any) => {
+// Background function to ensure admin profile exists
+const ensureAdminProfileExists = async (authUser: any) => {
   try {
-    console.log("Updating admin profile in background");
+    console.log("Ensuring admin profile exists in database");
     const { error } = await supabase
       .from("profiles")
       .upsert({
@@ -99,23 +96,22 @@ const updateAdminProfileAsync = async (authUser: any) => {
       });
       
     if (error) {
-      console.error("Error updating admin profile in background:", error);
+      console.error("Error upserting admin profile:", error);
     } else {
-      console.log("Admin profile updated successfully in background");
+      console.log("Admin profile ensured in database");
     }
   } catch (err) {
-    console.error("Failed to update admin profile in background:", err);
+    console.error("Failed to ensure admin profile:", err);
   }
 };
 
-// Create a user profile in the database
+// Create a new user profile
 const createUserProfile = async (authUser: any): Promise<User> => {
-  // Default role for regular users
   const defaultRole: UserRole = "customer";
-  const name = authUser.user_metadata?.name || authUser.email?.split("@")[0] || "Customer " + authUser.id.substring(0, 8);
+  const name = authUser.user_metadata?.name || authUser.email?.split("@")[0] || "Customer";
 
   try {
-    console.log(`Creating new profile for user ${authUser.id} with name "${name}" and role "${defaultRole}"`);
+    console.log(`Creating profile for user ${authUser.id} with role ${defaultRole}`);
     
     const { data: insertedProfile, error: insertError } = await supabase
       .from("profiles")
@@ -145,4 +141,10 @@ const createUserProfile = async (authUser: any): Promise<User> => {
     console.error("Error during profile creation:", error);
     throw new Error(`Profile creation failed: ${error.message}`);
   }
+};
+
+// Clear profile cache (for sign out)
+export const clearProfileCache = () => {
+  profileCache.clear();
+  console.log("Profile cache cleared");
 };
