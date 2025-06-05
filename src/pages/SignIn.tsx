@@ -25,6 +25,7 @@ const SignIn = () => {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [hasRedirected, setHasRedirected] = useState(false);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -47,22 +48,25 @@ const SignIn = () => {
     if (passwordInput) passwordInput.value = '';
   }, []);
 
-  // Handle authenticated user redirection - this should run immediately when user is detected
+  // Handle authenticated user redirection - redirect immediately when user is detected
   useEffect(() => {
-    if (user && !isLoading) {
+    if (user && !hasRedirected) {
       console.log('SignIn: Authenticated user detected, redirecting immediately');
       console.log('SignIn: User role:', user.role);
+      setHasRedirected(true);
       
-      // Force navigation with replace: true to avoid back button issues
-      if (user.role === 'admin') {
-        console.log('SignIn: Redirecting to admin dashboard');
-        window.location.href = '/admin-dashboard';
-      } else {
-        console.log('SignIn: Redirecting to customer dashboard');
-        window.location.href = '/customer-dashboard';
-      }
+      // Use setTimeout to ensure state updates don't interfere
+      setTimeout(() => {
+        if (user.role === 'admin') {
+          console.log('SignIn: Redirecting to admin dashboard');
+          window.location.replace('/admin-dashboard');
+        } else {
+          console.log('SignIn: Redirecting to customer dashboard');
+          window.location.replace('/customer-dashboard');
+        }
+      }, 100);
     }
-  }, [user, isLoading]);
+  }, [user, hasRedirected]);
 
   const onSubmit = async (data: FormValues) => {
     setAuthError(null);
@@ -89,6 +93,19 @@ const SignIn = () => {
     }
   };
 
+  // If user is authenticated, show redirecting message
+  if (user) {
+    console.log('SignIn: User authenticated, showing redirect message');
+    return (
+      <div className="h-screen flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin mx-auto text-blue-500 mb-4" />
+          <p className="text-gray-500">Redirecting to dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
   // If auth is still loading, show loading state
   if (isLoading) {
     console.log('SignIn: Showing auth loading state');
@@ -97,19 +114,6 @@ const SignIn = () => {
         <div className="text-center">
           <Loader2 className="h-12 w-12 animate-spin mx-auto text-blue-500 mb-4" />
           <p className="text-gray-500">Checking authentication...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // If user is authenticated but we're still here, show redirecting message
-  if (user) {
-    console.log('SignIn: User authenticated, forcing redirect');
-    return (
-      <div className="h-screen flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin mx-auto text-blue-500 mb-4" />
-          <p className="text-gray-500">Redirecting to dashboard...</p>
         </div>
       </div>
     );
