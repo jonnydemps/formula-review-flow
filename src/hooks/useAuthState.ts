@@ -33,13 +33,13 @@ export const useAuthState = () => {
   const handleProfileFetchWithTimeout = async (authUser: any): Promise<User | null> => {
     return new Promise(async (resolve) => {
       const timeout = setTimeout(() => {
-        console.log('Profile fetch timeout after 8 seconds, proceeding without profile');
+        console.log('Profile fetch timeout after 5 seconds, proceeding without profile');
         resolve(null);
-      }, 8000); // Reduced to 8 seconds for faster response
+      }, 5000); // Reduced to 5 seconds
 
       try {
         console.log('Starting profile fetch for user:', authUser.id);
-        const userData = await handleProfileFetchWithRetry(authUser, 0, 1); // Reduced retries
+        const userData = await handleProfileFetchWithRetry(authUser, 0, 0); // No retries for faster response
         clearTimeout(timeout);
         console.log('Profile fetch completed successfully');
         resolve(userData);
@@ -94,7 +94,8 @@ export const useAuthState = () => {
             if (userData && mountedRef.current) {
               setUserCallback(userData);
             } else if (mountedRef.current) {
-              await handleSignOut();
+              console.log('No profile data, but continuing without sign out for existing session');
+              // Don't sign out existing sessions if profile fetch fails
             }
           }
           
@@ -137,8 +138,9 @@ export const useAuthState = () => {
                 console.log('User profile loaded successfully:', userData.email);
                 setUserCallback(userData);
               } else if (mountedRef.current) {
-                console.log('Profile fetch failed, signing out');
-                await handleSignOut();
+                console.log('Profile fetch failed, but user will stay signed in');
+                // For new sign-ins, if profile fails, we don't sign out automatically
+                // We'll let them try to use the app and handle errors gracefully
               }
               
               if (mountedRef.current) {
@@ -169,7 +171,7 @@ export const useAuthState = () => {
             if (mountedRef.current) {
               setLoadingCallback(false);
             }
-          }, 6000); // Reduced to 6 seconds
+          }, 4000); // Reduced to 4 seconds
 
           const { data: { session }, error } = await supabase.auth.getSession();
           clearTimeout(sessionTimeout);
@@ -196,8 +198,8 @@ export const useAuthState = () => {
             console.log('Initial profile loaded:', userData.email);
             setUserCallback(userData);
           } else if (mountedRef.current) {
-            console.log('Initial profile fetch failed, signing out');
-            await handleSignOut();
+            console.log('Initial profile fetch failed, but keeping session active');
+            // Don't sign out on initial load if profile fails
           }
           
           if (mountedRef.current) {

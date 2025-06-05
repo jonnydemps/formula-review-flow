@@ -19,9 +19,9 @@ export const fetchUserProfile = async (authUser: any): Promise<User> => {
 
   console.log("Fetching profile for user:", authUser.id);
 
-  // Special case for the admin account
+  // Special case for the admin account - return immediately without DB call
   if (authUser.email === 'john-dempsey@hotmail.co.uk') {
-    console.log("Admin account detected, setting admin role");
+    console.log("Admin account detected, creating admin user object");
     const adminUser = {
       id: authUser.id,
       email: authUser.email,
@@ -32,32 +32,14 @@ export const fetchUserProfile = async (authUser: any): Promise<User> => {
     // Cache the admin profile
     profileCache.set(authUser.id, {user: adminUser, timestamp: now});
     
-    // Ensure admin profile is saved in the database as well
-    try {
-      const { data, error } = await supabase
-        .from("profiles")
-        .upsert({
-          id: authUser.id,
-          name: adminUser.name,
-          role: adminUser.role
-        })
-        .select();
-        
-      if (error) {
-        console.error("Error updating admin profile:", error);
-      } else {
-        console.log("Admin profile saved or updated in database");
-      }
-    } catch (err) {
-      console.error("Failed to update admin profile in database:", err);
-    }
+    // Asynchronously ensure admin profile exists in database (don't wait for it)
+    updateAdminProfileAsync(authUser);
     
     return adminUser;
   }
 
   try {
     // For non-admin users, continue with the regular flow
-    // Fetch profile using maybeSingle() to handle non-existent profiles gracefully
     const { data: profileData, error: profileError } = await supabase
       .from("profiles")
       .select("role, name")
@@ -66,7 +48,6 @@ export const fetchUserProfile = async (authUser: any): Promise<User> => {
 
     if (profileError) {
       console.error("Error fetching profile:", profileError);
-      // Rethrow the error if fetching fails, AuthContext can handle fallback/signout
       throw new Error(`Failed to fetch profile: ${profileError.message}`);
     }
 
@@ -101,50 +82,34 @@ export const fetchUserProfile = async (authUser: any): Promise<User> => {
     console.error("Profile service error:", error);
     // Clear cache on error
     profileCache.delete(authUser.id);
-    // Propagate the error to be handled by the caller (e.g., AuthContext)
     throw new Error(`Profile service failed: ${error.message}`);
+  }
+};
+
+// Async function to update admin profile in background
+const updateAdminProfileAsync = async (authUser: any) => {
+  try {
+    console.log("Updating admin profile in background");
+    const { error } = await supabase
+      .from("profiles")
+      .upsert({
+        id: authUser.id,
+        name: authUser.user_metadata?.name || 'Admin',
+        role: 'admin'
+      });
+      
+    if (error) {
+      console.error("Error updating admin profile in background:", error);
+    } else {
+      console.log("Admin profile updated successfully in background");
+    }
+  } catch (err) {
+    console.error("Failed to update admin profile in background:", err);
   }
 };
 
 // Create a user profile in the database
 const createUserProfile = async (authUser: any): Promise<User> => {
-  // Special case for admin account
-  if (authUser.email === 'john-dempsey@hotmail.co.uk') {
-    const adminRole: UserRole = "admin";
-    const name = authUser.user_metadata?.name || "Admin";
-
-    try {
-      console.log(`Creating admin profile for ${authUser.id} with name "${name}" and role "${adminRole}"`);
-      
-      const { data: insertedProfile, error: insertError } = await supabase
-        .from("profiles")
-        .insert({
-          id: authUser.id,
-          name: name,
-          role: adminRole,
-        })
-        .select("role, name")
-        .single();
-
-      if (insertError) {
-        console.error("Error creating admin profile:", insertError);
-        throw new Error(`Failed to create admin profile: ${insertError.message}`);
-      }
-
-      console.log("Admin profile created successfully:", insertedProfile);
-      
-      return {
-        id: authUser.id,
-        email: authUser.email || "",
-        role: adminRole,
-        name: name,
-      };
-    } catch (error: any) {
-      console.error("Error during admin profile creation:", error);
-      throw new Error(`Admin profile creation failed: ${error.message}`);
-    }
-  }
-
   // Default role for regular users
   const defaultRole: UserRole = "customer";
   const name = authUser.user_metadata?.name || authUser.email?.split("@")[0] || "Customer " + authUser.id.substring(0, 8);
@@ -164,13 +129,11 @@ const createUserProfile = async (authUser: any): Promise<User> => {
 
     if (insertError) {
       console.error("Error creating profile:", insertError);
-      // If profile creation fails, throw an error
       throw new Error(`Failed to create profile: ${insertError.message}`);
     }
 
     console.log("Profile created successfully:", insertedProfile);
     
-    // Return the newly created user data
     return {
       id: authUser.id,
       email: authUser.email || "",
@@ -180,7 +143,6 @@ const createUserProfile = async (authUser: any): Promise<User> => {
 
   } catch (error: any) {
     console.error("Error during profile creation:", error);
-    // Propagate the error
     throw new Error(`Profile creation failed: ${error.message}`);
   }
 };

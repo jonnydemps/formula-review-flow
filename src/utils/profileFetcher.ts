@@ -2,7 +2,6 @@
 import { fetchUserProfile } from '@/services/profileService';
 import { getCachedProfile, setCachedProfile } from '@/utils/profileCache';
 import { User } from '@/types/auth';
-import { toast } from 'sonner';
 
 export const fetchUserProfileWithCache = async (sessionUser: any): Promise<User> => {
   // Check cache first
@@ -24,7 +23,7 @@ export const fetchUserProfileWithCache = async (sessionUser: any): Promise<User>
 export const handleProfileFetchWithRetry = async (
   sessionUser: any, 
   retryCount = 0,
-  maxRetries = 2
+  maxRetries = 1 // Reduced retries for faster response
 ): Promise<User | null> => {
   try {
     console.log(`Fetching user profile (attempt ${retryCount + 1})...`);
@@ -36,14 +35,13 @@ export const handleProfileFetchWithRetry = async (
     
     // If we haven't retried too many times, try again
     if (retryCount < maxRetries) {
-      console.log(`Retrying profile fetch in 1 second...`);
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      console.log(`Retrying profile fetch in 500ms...`);
+      await new Promise(resolve => setTimeout(resolve, 500)); // Reduced delay
       return handleProfileFetchWithRetry(sessionUser, retryCount + 1, maxRetries);
     }
     
-    // After max retries, show error and throw
-    console.error('Max retries reached, throwing error');
-    toast.error(`Failed to load user profile. Please try logging in again.`);
-    throw error;
+    // After max retries, return null instead of throwing
+    console.error('Max retries reached, returning null');
+    return null;
   }
 };
