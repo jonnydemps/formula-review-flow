@@ -38,7 +38,8 @@ const FormulaTable: React.FC<FormulaTableProps> = ({ formulas, onProvideQuote, o
             <TableRow>
               <TableHead>Formula</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Customer</TableHead>
+              <TableHead>Customer Name</TableHead>
+              <TableHead>Customer Email</TableHead>
               <TableHead>Date</TableHead>
               <TableHead className="text-right">Quote</TableHead>
               <TableHead>Actions</TableHead>
@@ -54,7 +55,10 @@ const FormulaTable: React.FC<FormulaTableProps> = ({ formulas, onProvideQuote, o
                   <StatusBadge status={formula.status} />
                 </TableCell>
                 <TableCell className="truncate max-w-[150px]">
-                  {formula.customer_name || formula.customer_id || 'Unknown'}
+                  {formula.profiles?.name || 'Unknown'}
+                </TableCell>
+                <TableCell className="truncate max-w-[200px]">
+                  {formula.profiles?.email || formula.customer_id || 'Unknown'}
                 </TableCell>
                 <TableCell>
                   {new Date(formula.created_at).toLocaleDateString()}
