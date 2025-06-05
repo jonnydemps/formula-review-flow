@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,10 +22,8 @@ type FormValues = z.infer<typeof formSchema>;
 
 const SignIn = () => {
   const { user, signIn, isLoading } = useAuth();
-  const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
-  const [hasRedirected, setHasRedirected] = useState(false);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -48,25 +46,17 @@ const SignIn = () => {
     if (passwordInput) passwordInput.value = '';
   }, []);
 
-  // Handle authenticated user redirection - redirect immediately when user is detected
-  useEffect(() => {
-    if (user && !hasRedirected) {
-      console.log('SignIn: Authenticated user detected, redirecting immediately');
-      console.log('SignIn: User role:', user.role);
-      setHasRedirected(true);
-      
-      // Use setTimeout to ensure state updates don't interfere
-      setTimeout(() => {
-        if (user.role === 'admin') {
-          console.log('SignIn: Redirecting to admin dashboard');
-          window.location.replace('/admin-dashboard');
-        } else {
-          console.log('SignIn: Redirecting to customer dashboard');
-          window.location.replace('/customer-dashboard');
-        }
-      }, 100);
+  // If user is authenticated, redirect immediately using Navigate component
+  if (user) {
+    console.log('SignIn: User authenticated, redirecting via Navigate component');
+    if (user.role === 'admin') {
+      console.log('SignIn: Redirecting to admin dashboard');
+      return <Navigate to="/admin-dashboard" replace />;
+    } else {
+      console.log('SignIn: Redirecting to customer dashboard');
+      return <Navigate to="/customer-dashboard" replace />;
     }
-  }, [user, hasRedirected]);
+  }
 
   const onSubmit = async (data: FormValues) => {
     setAuthError(null);
@@ -82,7 +72,7 @@ const SignIn = () => {
         setAuthError(response.error.message);
       } else {
         console.log('SignIn: Success response received');
-        // Success case - the useEffect above will handle the redirect
+        // Success case - the user state will update and trigger redirect above
       }
       
     } catch (error: any) {
@@ -92,19 +82,6 @@ const SignIn = () => {
       setIsSubmitting(false);
     }
   };
-
-  // If user is authenticated, show redirecting message
-  if (user) {
-    console.log('SignIn: User authenticated, showing redirect message');
-    return (
-      <div className="h-screen flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin mx-auto text-blue-500 mb-4" />
-          <p className="text-gray-500">Redirecting to dashboard...</p>
-        </div>
-      </div>
-    );
-  }
 
   // If auth is still loading, show loading state
   if (isLoading) {
