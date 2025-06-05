@@ -47,19 +47,25 @@ const SignIn = () => {
     if (passwordInput) passwordInput.value = '';
   }, []);
 
-  // Redirect if already authenticated
+  // Redirect if already authenticated - this should be the primary redirect logic
   useEffect(() => {
-    if (user) {
+    if (user && !isLoading) {
       console.log('SignIn: User is authenticated, redirecting...', user.email, user.role);
-      if (user.role === 'admin') {
-        console.log('SignIn: Navigating to admin dashboard');
-        navigate('/admin-dashboard');
-      } else {
-        console.log('SignIn: Navigating to customer dashboard');
-        navigate('/customer-dashboard');
-      }
+      
+      // Small delay to ensure state is stable
+      const timer = setTimeout(() => {
+        if (user.role === 'admin') {
+          console.log('SignIn: Navigating to admin dashboard');
+          navigate('/admin-dashboard', { replace: true });
+        } else {
+          console.log('SignIn: Navigating to customer dashboard');
+          navigate('/customer-dashboard', { replace: true });
+        }
+      }, 100);
+
+      return () => clearTimeout(timer);
     }
-  }, [user, navigate]);
+  }, [user, isLoading, navigate]);
 
   const onSubmit = async (data: FormValues) => {
     setAuthError(null);
@@ -76,7 +82,8 @@ const SignIn = () => {
         setIsSubmitting(false);
       } else {
         console.log('SignIn: Success response received');
-        // Success case - AuthContext will handle the redirect
+        // Success case - AuthContext will handle the redirect via useEffect above
+        setIsSubmitting(false);
       }
       
     } catch (error: any) {
@@ -86,8 +93,8 @@ const SignIn = () => {
     }
   };
 
-  // Show loading state while auth is initializing or checking
-  if (isLoading && !isSubmitting) {
+  // Show loading state while auth is initializing
+  if (isLoading) {
     console.log('SignIn: Showing auth loading state');
     return (
       <div className="h-screen flex items-center justify-center">
@@ -99,14 +106,14 @@ const SignIn = () => {
     );
   }
 
-  // If we're authenticated, show loading while redirecting
+  // If user is authenticated, show brief loading while redirect happens
   if (user) {
     console.log('SignIn: User authenticated, showing redirect loading');
     return (
       <div className="h-screen flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="h-12 w-12 animate-spin mx-auto text-blue-500 mb-4" />
-          <p className="text-gray-500">Redirecting...</p>
+          <p className="text-gray-500">Redirecting to dashboard...</p>
         </div>
       </div>
     );
@@ -132,7 +139,7 @@ const SignIn = () => {
             <form 
               onSubmit={form.handleSubmit(onSubmit)} 
               className="space-y-4"
-              autoComplete="off" // Disable form autocomplete
+              autoComplete="off"
             >
               <FormField
                 control={form.control}
@@ -144,7 +151,7 @@ const SignIn = () => {
                       <Input 
                         placeholder="you@example.com" 
                         type="email" 
-                        autoComplete="new-email" // Prevent autofill
+                        autoComplete="new-email"
                         disabled={isSubmitting}
                         {...field}
                       />
@@ -164,7 +171,7 @@ const SignIn = () => {
                       <Input 
                         placeholder="••••••••" 
                         type="password" 
-                        autoComplete="new-password" // Prevent autofill
+                        autoComplete="new-password"
                         disabled={isSubmitting}
                         {...field}
                       />

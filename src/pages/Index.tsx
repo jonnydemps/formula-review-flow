@@ -15,7 +15,7 @@ const Index = () => {
     return (
       <div className="h-screen flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin mx-auto text-ra-blue mb-4" />
+          <Loader2 className="h-12 w-12 animate-spin mx-auto text-blue-500 mb-4" />
           <p className="text-gray-500">Checking authentication...</p>
         </div>
       </div>
