@@ -27,6 +27,27 @@ export const useAuthState = () => {
     }
   }, []);
 
+  // Helper function to handle profile fetch with timeout
+  const handleProfileFetchWithTimeout = async (authUser: any): Promise<User | null> => {
+    return new Promise(async (resolve) => {
+      // Set a timeout to prevent hanging
+      const timeout = setTimeout(() => {
+        console.log('Profile fetch timeout, proceeding without profile');
+        resolve(null);
+      }, 10000); // 10 second timeout
+
+      try {
+        const userData = await handleProfileFetchWithRetry(authUser);
+        clearTimeout(timeout);
+        resolve(userData);
+      } catch (error) {
+        console.error('Profile fetch failed:', error);
+        clearTimeout(timeout);
+        resolve(null);
+      }
+    });
+  };
+
   useEffect(() => {
     mountedRef.current = true;
     
@@ -45,9 +66,13 @@ export const useAuthState = () => {
 
         if (session?.user && mountedRef.current) {
           try {
-            const userData = await handleProfileFetchWithRetry(session.user);
+            const userData = await handleProfileFetchWithTimeout(session.user);
             if (userData && mountedRef.current) {
               setUserCallback(userData);
+            } else if (mountedRef.current) {
+              // If profile fetch failed but we have a session, sign out
+              await supabase.auth.signOut();
+              setUserCallback(null);
             }
           } catch (error) {
             console.error('Profile fetch failed:', error);
@@ -85,10 +110,14 @@ export const useAuthState = () => {
               }
               
               try {
-                const userData = await handleProfileFetchWithRetry(session.user);
+                const userData = await handleProfileFetchWithTimeout(session.user);
                 if (userData && mountedRef.current) {
                   console.log('User profile loaded:', userData.email);
                   setUserCallback(userData);
+                } else if (mountedRef.current) {
+                  console.log('Profile fetch failed, signing out');
+                  await supabase.auth.signOut();
+                  setUserCallback(null);
                 }
               } catch (error) {
                 console.error('Profile fetch failed, signing out:', error);
@@ -118,9 +147,20 @@ export const useAuthState = () => {
 
           globalAuthSubscription = subscription;
 
-          // Check for existing session
+          // Check for existing session with timeout
           console.log('Checking for existing session...');
+          
+          // Add timeout for session check
+          const sessionTimeout = setTimeout(() => {
+            console.log('Session check timeout, clearing loading state');
+            if (mountedRef.current) {
+              setLoadingCallback(false);
+            }
+          }, 8000); // 8 second timeout for session check
+
           const { data: { session }, error } = await supabase.auth.getSession();
+
+          clearTimeout(sessionTimeout);
 
           if (error) {
             console.error('Session check error:', error);
@@ -140,15 +180,20 @@ export const useAuthState = () => {
 
           console.log('Existing session found for user:', session.user.id);
           try {
-            const userData = await handleProfileFetchWithRetry(session.user);
+            const userData = await handleProfileFetchWithTimeout(session.user);
             if (userData && mountedRef.current) {
               console.log('Initial profile loaded:', userData.email);
               setUserCallback(userData);
+            } else if (mountedRef.current) {
+              console.log('Initial profile fetch failed, signing out');
+              await supabase.auth.signOut();
+              setUserCallback(null);
             }
           } catch (error) {
             console.error('Initial profile fetch failed:', error);
             if (mountedRef.current) {
               await supabase.auth.signOut();
+              setUserCallback(null);
             }
           } finally {
             if (mountedRef.current) {
