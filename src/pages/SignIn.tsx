@@ -47,25 +47,23 @@ const SignIn = () => {
     if (passwordInput) passwordInput.value = '';
   }, []);
 
-  // Redirect if already authenticated - this should be the primary redirect logic
+  // Redirect authenticated users immediately
   useEffect(() => {
-    if (user && !isLoading) {
+    console.log('SignIn: useEffect triggered - user:', !!user, 'isLoading:', isLoading);
+    
+    if (user) {
       console.log('SignIn: User is authenticated, redirecting...', user.email, user.role);
       
-      // Small delay to ensure state is stable
-      const timer = setTimeout(() => {
-        if (user.role === 'admin') {
-          console.log('SignIn: Navigating to admin dashboard');
-          navigate('/admin-dashboard', { replace: true });
-        } else {
-          console.log('SignIn: Navigating to customer dashboard');
-          navigate('/customer-dashboard', { replace: true });
-        }
-      }, 100);
-
-      return () => clearTimeout(timer);
+      // Immediate redirect without delay
+      if (user.role === 'admin') {
+        console.log('SignIn: Navigating to admin dashboard');
+        navigate('/admin-dashboard', { replace: true });
+      } else {
+        console.log('SignIn: Navigating to customer dashboard');
+        navigate('/customer-dashboard', { replace: true });
+      }
     }
-  }, [user, isLoading, navigate]);
+  }, [user, navigate]);
 
   const onSubmit = async (data: FormValues) => {
     setAuthError(null);
@@ -79,19 +77,31 @@ const SignIn = () => {
       if ('error' in response) {
         console.log('SignIn: Error in response:', response.error.message);
         setAuthError(response.error.message);
-        setIsSubmitting(false);
       } else {
         console.log('SignIn: Success response received');
-        // Success case - AuthContext will handle the redirect via useEffect above
-        setIsSubmitting(false);
+        // Success case - the useEffect above will handle the redirect
       }
       
     } catch (error: any) {
       console.error('Sign in submission error:', error);
       setAuthError(error.message || 'Failed to sign in');
+    } finally {
       setIsSubmitting(false);
     }
   };
+
+  // If user is authenticated, show loading while redirect happens
+  if (user) {
+    console.log('SignIn: User authenticated, showing redirect loading');
+    return (
+      <div className="h-screen flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin mx-auto text-blue-500 mb-4" />
+          <p className="text-gray-500">Redirecting to dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
   // Show loading state while auth is initializing
   if (isLoading) {
@@ -101,19 +111,6 @@ const SignIn = () => {
         <div className="text-center">
           <Loader2 className="h-12 w-12 animate-spin mx-auto text-blue-500 mb-4" />
           <p className="text-gray-500">Checking authentication...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // If user is authenticated, show brief loading while redirect happens
-  if (user) {
-    console.log('SignIn: User authenticated, showing redirect loading');
-    return (
-      <div className="h-screen flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin mx-auto text-blue-500 mb-4" />
-          <p className="text-gray-500">Redirecting to dashboard...</p>
         </div>
       </div>
     );
