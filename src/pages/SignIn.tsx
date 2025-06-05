@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -11,7 +11,6 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
 
 const formSchema = z.object({
   email: z.string().min(1, 'Email is required').email('Invalid email address'),
@@ -34,16 +33,13 @@ const SignIn = () => {
   });
 
   console.log('SignIn page - isLoading:', isLoading, 'user:', user?.email, 'role:', user?.role);
-  console.log('SignIn page - current location:', window.location.pathname);
 
   // If user is authenticated, redirect immediately
   if (user && !isLoading) {
-    console.log('SignIn: User authenticated, redirecting via Navigate component');
+    console.log('SignIn: User authenticated, redirecting');
     if (user.role === 'admin') {
-      console.log('SignIn: Redirecting to admin dashboard');
       return <Navigate to="/admin-dashboard" replace />;
     } else {
-      console.log('SignIn: Redirecting to customer dashboard');
       return <Navigate to="/customer-dashboard" replace />;
     }
   }
@@ -56,13 +52,12 @@ const SignIn = () => {
       console.log('SignIn: Attempting to sign in with:', data.email);
       const response = await signIn(data.email, data.password);
       
-      // Check if there was an error from the sign in process
       if ('error' in response) {
         console.log('SignIn: Error in response:', response.error.message);
         setAuthError(response.error.message);
       } else {
         console.log('SignIn: Success response received');
-        // Success case - the user state will update and trigger redirect above
+        // Success - redirect will happen automatically via useAuth context
       }
       
     } catch (error: any) {
@@ -73,20 +68,17 @@ const SignIn = () => {
     }
   };
 
-  // If auth is still loading, show loading state
+  // Show loading state while checking authentication
   if (isLoading) {
-    console.log('SignIn: Showing auth loading state');
     return (
-      <div className="h-screen flex items-center justify-center">
+      <div className="h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin mx-auto text-blue-500 mb-4" />
-          <p className="text-gray-500">Checking authentication...</p>
+          <Loader2 className="h-8 w-8 animate-spin mx-auto text-blue-500 mb-3" />
+          <p className="text-gray-600 text-sm">Verifying authentication...</p>
         </div>
       </div>
     );
   }
-
-  console.log('SignIn: Rendering sign-in form');
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
@@ -118,7 +110,7 @@ const SignIn = () => {
                       <Input 
                         placeholder="you@example.com" 
                         type="email" 
-                        autoComplete="new-email"
+                        autoComplete="email"
                         disabled={isSubmitting}
                         {...field}
                       />
@@ -138,7 +130,7 @@ const SignIn = () => {
                       <Input 
                         placeholder="••••••••" 
                         type="password" 
-                        autoComplete="new-password"
+                        autoComplete="current-password"
                         disabled={isSubmitting}
                         {...field}
                       />
