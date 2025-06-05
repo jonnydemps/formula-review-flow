@@ -25,6 +25,7 @@ const SignIn = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [hasCheckedAuth, setHasCheckedAuth] = useState(false);
+  const [forceRerender, setForceRerender] = useState(0);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -38,13 +39,15 @@ const SignIn = () => {
   console.log('SignIn page - current location:', window.location.pathname);
   console.log('SignIn page - hasCheckedAuth:', hasCheckedAuth);
 
-  // Track when auth check is complete
+  // Track when auth check is complete and force re-render when user state changes
   useEffect(() => {
     if (!isLoading) {
       setHasCheckedAuth(true);
       console.log('SignIn: Auth check completed, hasCheckedAuth set to true');
     }
-  }, [isLoading]);
+    // Force re-render when user state changes
+    setForceRerender(prev => prev + 1);
+  }, [isLoading, user]);
 
   // When component mounts, clear any saved credentials in the form
   useEffect(() => {
@@ -66,6 +69,12 @@ const SignIn = () => {
       console.log('SignIn: Redirecting to customer dashboard');
       return <Navigate to="/customer-dashboard" replace />;
     }
+  }
+
+  // Additional check: if we have a user but haven't checked auth yet, wait a moment
+  if (user && !hasCheckedAuth) {
+    console.log('SignIn: User found but auth check not complete, waiting...');
+    setTimeout(() => setHasCheckedAuth(true), 100);
   }
 
   const onSubmit = async (data: FormValues) => {
