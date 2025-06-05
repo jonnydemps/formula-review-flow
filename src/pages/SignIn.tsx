@@ -34,6 +34,9 @@ const SignIn = () => {
     },
   });
 
+  console.log('SignIn page - isLoading:', isLoading, 'user:', user?.email, 'role:', user?.role);
+  console.log('SignIn page - current location:', window.location.pathname);
+
   // When component mounts, clear any saved credentials in the form
   useEffect(() => {
     // Reset any autofilled values by browser
@@ -47,9 +50,12 @@ const SignIn = () => {
   // Redirect if already authenticated
   useEffect(() => {
     if (user) {
+      console.log('SignIn: User is authenticated, redirecting...', user.email, user.role);
       if (user.role === 'admin') {
+        console.log('SignIn: Navigating to admin dashboard');
         navigate('/admin-dashboard');
       } else {
+        console.log('SignIn: Navigating to customer dashboard');
         navigate('/customer-dashboard');
       }
     }
@@ -60,14 +66,18 @@ const SignIn = () => {
     setIsSubmitting(true);
     
     try {
+      console.log('SignIn: Attempting to sign in with:', data.email);
       const response = await signIn(data.email, data.password);
       
       // Check if there was an error from the sign in process
       if ('error' in response) {
+        console.log('SignIn: Error in response:', response.error.message);
         setAuthError(response.error.message);
         setIsSubmitting(false);
+      } else {
+        console.log('SignIn: Success response received');
+        // Success case - AuthContext will handle the redirect
       }
-      // No need to handle success case, AuthContext will redirect automatically
       
     } catch (error: any) {
       console.error('Sign in submission error:', error);
@@ -78,6 +88,7 @@ const SignIn = () => {
 
   // Show loading state while auth is initializing or checking
   if (isLoading && !isSubmitting) {
+    console.log('SignIn: Showing auth loading state');
     return (
       <div className="h-screen flex items-center justify-center">
         <div className="text-center">
@@ -90,6 +101,7 @@ const SignIn = () => {
 
   // If we're authenticated, show loading while redirecting
   if (user) {
+    console.log('SignIn: User authenticated, showing redirect loading');
     return (
       <div className="h-screen flex items-center justify-center">
         <div className="text-center">
@@ -99,6 +111,8 @@ const SignIn = () => {
       </div>
     );
   }
+
+  console.log('SignIn: Rendering sign-in form');
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">

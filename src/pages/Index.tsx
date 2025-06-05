@@ -7,9 +7,11 @@ const Index = () => {
   const { user, isLoading } = useAuth();
 
   console.log('Index page - isLoading:', isLoading, 'user:', user?.email, 'role:', user?.role);
+  console.log('Index page - current location:', window.location.pathname);
 
   // Show loading state while checking authentication
   if (isLoading) {
+    console.log('Index: Still loading auth state');
     return (
       <div className="h-screen flex items-center justify-center">
         <div className="text-center">
@@ -24,8 +26,10 @@ const Index = () => {
   if (user) {
     console.log('Index: Redirecting authenticated user:', user.email, 'role:', user.role);
     if (user.role === 'admin') {
+      console.log('Index: Redirecting to admin dashboard');
       return <Navigate to="/admin-dashboard" replace />;
     }
+    console.log('Index: Redirecting to customer dashboard');
     return <Navigate to="/customer-dashboard" replace />;
   }
 
