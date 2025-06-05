@@ -3,14 +3,16 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { User } from '@/types/auth';
 import { Button } from '@/components/ui/button';
+import { Loader2 } from 'lucide-react';
 import { getDashboardLink, getDashboardLabel } from '@/utils/headerUtils';
 
 interface DesktopNavigationProps {
   user: User | null;
   onSignOut: () => void;
+  isSigningOut: boolean;
 }
 
-const DesktopNavigation: React.FC<DesktopNavigationProps> = ({ user, onSignOut }) => {
+const DesktopNavigation: React.FC<DesktopNavigationProps> = ({ user, onSignOut, isSigningOut }) => {
   return (
     <nav className="hidden md:flex items-center gap-6">
       <Link to="/" className="text-gray-600 hover:text-ra-blue transition-colors relative group">
@@ -38,11 +40,19 @@ const DesktopNavigation: React.FC<DesktopNavigationProps> = ({ user, onSignOut }
             </span>
             <Button 
               variant="outline" 
-              onClick={() => onSignOut()} 
+              onClick={onSignOut} 
               size="sm"
-              className="hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors"
+              disabled={isSigningOut}
+              className="hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors disabled:opacity-50"
             >
-              Sign Out
+              {isSigningOut ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Signing Out...
+                </>
+              ) : (
+                'Sign Out'
+              )}
             </Button>
           </div>
         </>

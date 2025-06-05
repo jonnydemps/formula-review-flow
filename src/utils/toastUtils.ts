@@ -56,14 +56,8 @@ export const showInfoToast = (message: string, description?: string) => {
 export const showLoadingToast = (message: string, promise: Promise<any>) => {
   return toast.promise(promise, {
     loading: message,
-    success: (data) => ({
-      title: 'Operation completed successfully',
-      description: data?.message || 'The operation was completed without issues.'
-    }),
-    error: (error) => ({
-      title: 'Operation failed',
-      description: getErrorMessage(error)
-    })
+    success: (data) => `Operation completed successfully: ${data?.message || 'The operation was completed without issues.'}`,
+    error: (error) => `Operation failed: ${getErrorMessage(error)}`
   });
 };
 

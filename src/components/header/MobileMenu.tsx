@@ -8,7 +8,8 @@ import {
   User as UserIcon,
   LogIn,
   FileUp,
-  Shield
+  Shield,
+  Loader2
 } from 'lucide-react';
 import { getDashboardLink, getDashboardLabel } from '@/utils/headerUtils';
 
@@ -17,9 +18,10 @@ interface MobileMenuProps {
   isOpen: boolean;
   onClose: () => void;
   onSignOut: () => void;
+  isSigningOut: boolean;
 }
 
-const MobileMenu: React.FC<MobileMenuProps> = ({ user, isOpen, onClose, onSignOut }) => {
+const MobileMenu: React.FC<MobileMenuProps> = ({ user, isOpen, onClose, onSignOut, isSigningOut }) => {
   const getDashboardIcon = () => {
     if (!user) return <FileUp className="h-4 w-4" />;
     return user.role === 'admin' ? <Shield className="h-4 w-4" /> : <FileUp className="h-4 w-4" />;
@@ -68,9 +70,17 @@ const MobileMenu: React.FC<MobileMenuProps> = ({ user, isOpen, onClose, onSignOu
                 variant="outline" 
                 onClick={() => { onSignOut(); onClose(); }} 
                 size="sm"
-                className="hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors"
+                disabled={isSigningOut}
+                className="hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors disabled:opacity-50"
               >
-                Sign Out
+                {isSigningOut ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    Signing Out...
+                  </>
+                ) : (
+                  'Sign Out'
+                )}
               </Button>
             </div>
           </>
