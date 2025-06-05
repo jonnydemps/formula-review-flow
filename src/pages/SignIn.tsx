@@ -24,8 +24,6 @@ const SignIn = () => {
   const { user, signIn, isLoading } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
-  const [hasCheckedAuth, setHasCheckedAuth] = useState(false);
-  const [forceRerender, setForceRerender] = useState(0);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -37,31 +35,10 @@ const SignIn = () => {
 
   console.log('SignIn page - isLoading:', isLoading, 'user:', user?.email, 'role:', user?.role);
   console.log('SignIn page - current location:', window.location.pathname);
-  console.log('SignIn page - hasCheckedAuth:', hasCheckedAuth);
 
-  // Track when auth check is complete and force re-render when user state changes
-  useEffect(() => {
-    if (!isLoading) {
-      setHasCheckedAuth(true);
-      console.log('SignIn: Auth check completed, hasCheckedAuth set to true');
-    }
-    // Force re-render when user state changes
-    setForceRerender(prev => prev + 1);
-  }, [isLoading, user]);
-
-  // When component mounts, clear any saved credentials in the form
-  useEffect(() => {
-    // Reset any autofilled values by browser
-    const emailInput = document.querySelector('input[name="email"]') as HTMLInputElement;
-    const passwordInput = document.querySelector('input[name="password"]') as HTMLInputElement;
-    
-    if (emailInput) emailInput.value = '';
-    if (passwordInput) passwordInput.value = '';
-  }, []);
-
-  // If user is authenticated and we've completed the auth check, redirect immediately
-  if (user && hasCheckedAuth) {
-    console.log('SignIn: User authenticated after auth check, redirecting via Navigate component');
+  // If user is authenticated, redirect immediately
+  if (user && !isLoading) {
+    console.log('SignIn: User authenticated, redirecting via Navigate component');
     if (user.role === 'admin') {
       console.log('SignIn: Redirecting to admin dashboard');
       return <Navigate to="/admin-dashboard" replace />;
@@ -69,12 +46,6 @@ const SignIn = () => {
       console.log('SignIn: Redirecting to customer dashboard');
       return <Navigate to="/customer-dashboard" replace />;
     }
-  }
-
-  // Additional check: if we have a user but haven't checked auth yet, wait a moment
-  if (user && !hasCheckedAuth) {
-    console.log('SignIn: User found but auth check not complete, waiting...');
-    setTimeout(() => setHasCheckedAuth(true), 100);
   }
 
   const onSubmit = async (data: FormValues) => {
@@ -103,7 +74,7 @@ const SignIn = () => {
   };
 
   // If auth is still loading, show loading state
-  if (isLoading || !hasCheckedAuth) {
+  if (isLoading) {
     console.log('SignIn: Showing auth loading state');
     return (
       <div className="h-screen flex items-center justify-center">
