@@ -39,6 +39,7 @@ import { parseFormulaExcel, generateMasterExcel, ParsedFormulaData } from '@/ser
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import AutoCompleteButton from './AutoCompleteButton';
+import { generateFormulaPDF } from '@/services/pdfReportService';
 
 // Define validation schema
 const reviewFormSchema = z.object({
@@ -297,9 +298,21 @@ const EnhancedFormulaReviewDialog: React.FC<EnhancedFormulaReviewDialogProps> = 
       
       await saveReview(formula.id, user.id, reviewData);
       
-      // Then generate report
+      // Generate PDF report
+      generateFormulaPDF({
+        formula,
+        reviewData,
+        reviewerName: 'John Dempsey',
+        reviewDate: new Date().toLocaleDateString('en-GB', {
+          day: '2-digit',
+          month: 'long',
+          year: 'numeric'
+        })
+      });
+      
+      // Then generate report in database
       await generateReport(formula.id, user.id);
-      toast.success('Report generated successfully');
+      toast.success('Report generated and downloaded successfully');
       onReviewComplete();
       onClose();
     } catch (error) {
@@ -520,17 +533,15 @@ const EnhancedFormulaReviewDialog: React.FC<EnhancedFormulaReviewDialogProps> = 
                       <Save className="h-4 w-4 mr-2" />
                       Save Review
                     </Button>
-                    {formula.status === 'paid' && (
-                      <Button 
-                        type="button"
-                        onClick={handleGenerateReport}
-                        disabled={isSubmitting}
-                        variant="default"
-                      >
-                        <Check className="h-4 w-4 mr-2" />
-                        Complete & Generate Report
-                      </Button>
-                    )}
+                    <Button 
+                      type="button"
+                      onClick={handleGenerateReport}
+                      disabled={isSubmitting}
+                      variant="default"
+                    >
+                      <Check className="h-4 w-4 mr-2" />
+                      Complete & Generate Report
+                    </Button>
                   </DialogFooter>
                 </form>
               </Form>
