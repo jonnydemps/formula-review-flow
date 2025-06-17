@@ -33,11 +33,11 @@ const AboutUs: React.FC = () => {
               <div className="md:col-span-2">
                 <div className="rounded-xl overflow-hidden border border-gray-200 shadow-md">
                   <AspectRatio ratio={3/4}>
-                    <div className="w-full h-full bg-gradient-to-br from-blue-100 to-gray-100 flex items-center justify-center">
-                      <div className="bg-white p-5 rounded-full shadow-md">
-                        <Briefcase className="h-16 w-16 text-ra-blue" />
-                      </div>
-                    </div>
+                    <img 
+                      src="https://images.unsplash.com/photo-1581092795360-fd1ca04f0952?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80"
+                      alt="John Dempsey - Founder & Principal Regulatory Consultant"
+                      className="w-full h-full object-cover"
+                    />
                   </AspectRatio>
                 </div>
               </div>
