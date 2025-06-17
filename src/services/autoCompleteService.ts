@@ -28,18 +28,13 @@ export const autoCompleteReview = async (ingredients: Ingredient[]): Promise<Ing
       if (masterData) {
         console.log(`Found master data for CAS ${ingredient.casNumber}:`, masterData);
         
-        // Build comprehensive notes from master data
-        const notes = [
-          masterData.chemical_name ? `Chemical Name: ${masterData.chemical_name}` : '',
-          masterData.aics_listed ? `AICS Listed: ${masterData.aics_listed}` : '',
-          masterData.specific_information_requirement ? `SIR: ${masterData.specific_information_requirement}` : '',
-          masterData.susmp ? `SUSMP: ${masterData.susmp}` : '',
-          masterData.nzoic ? `NZOIC: ${masterData.nzoic}` : ''
-        ].filter(note => note).join('\n');
-        
         updatedIngredient = {
           ...ingredient,
-          notes: notes,
+          chemicalName: masterData.chemical_name || '',
+          aicsListed: masterData.aics_listed || '',
+          sir: masterData.specific_information_requirement || '',
+          susmp: masterData.susmp || '',
+          nzoic: masterData.nzoic || '',
           compliant: true // Default to compliant, admin can change if needed
         };
       } else {

@@ -6,6 +6,11 @@ export interface Ingredient {
   compliant: boolean;
   notes?: string;
   casNumber?: string;
+  chemicalName?: string;
+  aicsListed?: string;
+  sir?: string;
+  susmp?: string;
+  nzoic?: string;
 }
 
 export interface ReviewData {

@@ -327,7 +327,7 @@ const EnhancedFormulaReviewDialog: React.FC<EnhancedFormulaReviewDialogProps> = 
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
@@ -462,9 +462,14 @@ const EnhancedFormulaReviewDialog: React.FC<EnhancedFormulaReviewDialogProps> = 
                       <Table>
                         <TableHeader>
                           <TableRow>
-                            <TableHead className="w-32">CAS Number</TableHead>
+                            <TableHead className="w-28">CAS Number</TableHead>
                             <TableHead>INCI Name</TableHead>
-                            <TableHead className="w-24">Conc. %</TableHead>
+                            <TableHead className="w-20">Conc. %</TableHead>
+                            <TableHead className="w-32">Chemical Name</TableHead>
+                            <TableHead className="w-20">AICS</TableHead>
+                            <TableHead className="w-20">SIR</TableHead>
+                            <TableHead className="w-20">SUSMP</TableHead>
+                            <TableHead className="w-20">NZOIC</TableHead>
                             <TableHead className="w-20">Compliant</TableHead>
                             <TableHead>Notes</TableHead>
                             <TableHead className="w-12"></TableHead>
@@ -490,6 +495,46 @@ const EnhancedFormulaReviewDialog: React.FC<EnhancedFormulaReviewDialogProps> = 
                                 <Input
                                   {...form.register(`ingredients.${index}.percentage`)}
                                   placeholder="%"
+                                />
+                              </TableCell>
+                              <TableCell>
+                                <Input
+                                  value={form.watch(`ingredients.${index}.chemicalName`) || ''}
+                                  readOnly
+                                  className="bg-gray-50 text-xs"
+                                  placeholder="Auto-filled"
+                                />
+                              </TableCell>
+                              <TableCell>
+                                <Input
+                                  value={form.watch(`ingredients.${index}.aicsListed`) || ''}
+                                  readOnly
+                                  className="bg-gray-50 text-xs"
+                                  placeholder="Auto"
+                                />
+                              </TableCell>
+                              <TableCell>
+                                <Input
+                                  value={form.watch(`ingredients.${index}.sir`) || ''}
+                                  readOnly
+                                  className="bg-gray-50 text-xs"
+                                  placeholder="Auto"
+                                />
+                              </TableCell>
+                              <TableCell>
+                                <Input
+                                  value={form.watch(`ingredients.${index}.susmp`) || ''}
+                                  readOnly
+                                  className="bg-gray-50 text-xs"
+                                  placeholder="Auto"
+                                />
+                              </TableCell>
+                              <TableCell>
+                                <Input
+                                  value={form.watch(`ingredients.${index}.nzoic`) || ''}
+                                  readOnly
+                                  className="bg-gray-50 text-xs"
+                                  placeholder="Auto"
                                 />
                               </TableCell>
                               <TableCell>

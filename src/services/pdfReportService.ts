@@ -94,12 +94,12 @@ export const generateFormulaPDF = (reportData: FormulaReportData): void => {
   yPosition += 15;
   
   // Table headers
-  doc.setFontSize(10);
+  doc.setFontSize(9);
   doc.setTextColor(darkGray);
   doc.setFont(undefined, 'bold');
   
-  const headers = ['CAS Number', 'INCI Name', 'Conc. %', 'Compliant', 'Notes'];
-  const colWidths = [35, 50, 20, 20, 65];
+  const headers = ['CAS Number', 'INCI Name', 'Conc. %', 'Chemical Name', 'AICS', 'SIR', 'SUSMP', 'NZOIC', 'Compliant'];
+  const colWidths = [22, 35, 15, 30, 15, 15, 15, 15, 18];
   let xPosition = 20;
   
   headers.forEach((header, index) => {
@@ -114,7 +114,7 @@ export const generateFormulaPDF = (reportData: FormulaReportData): void => {
   
   // Ingredient rows
   doc.setFont(undefined, 'normal');
-  doc.setFontSize(9);
+  doc.setFontSize(8);
   
   reviewData.ingredients.forEach((ingredient: Ingredient) => {
     // Check if we need a new page
@@ -128,8 +128,12 @@ export const generateFormulaPDF = (reportData: FormulaReportData): void => {
       ingredient.casNumber || '-',
       ingredient.name || '-',
       ingredient.percentage || '-',
-      ingredient.compliant ? 'Yes' : 'No',
-      ingredient.notes || '-'
+      ingredient.chemicalName || '-',
+      ingredient.aicsListed || '-',
+      ingredient.sir || '-',
+      ingredient.susmp || '-',
+      ingredient.nzoic || '-',
+      ingredient.compliant ? 'Yes' : 'No'
     ];
     
     rowData.forEach((data, index) => {
