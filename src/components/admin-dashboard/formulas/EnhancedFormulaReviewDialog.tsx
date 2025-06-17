@@ -518,9 +518,9 @@ const EnhancedFormulaReviewDialog: React.FC<EnhancedFormulaReviewDialogProps> = 
                       </div>
                     </div>
                     
-                    <div className="flex-1 overflow-hidden">
+                    <div className="flex-1 overflow-hidden border rounded-md">
                       <ScrollArea className="w-full h-full">
-                        <div className="min-w-[1400px]">
+                        <div className="min-w-[1400px] p-2">
                           <Table>
                             <TableHeader>
                               <TableRow>
@@ -545,6 +545,7 @@ const EnhancedFormulaReviewDialog: React.FC<EnhancedFormulaReviewDialogProps> = 
                                       {...form.register(`ingredients.${index}.casNumber`)}
                                       placeholder="CAS Number"
                                       className="w-32 text-sm"
+                                      maxLength={50}
                                     />
                                   </TableCell>
                                   <TableCell>
@@ -552,6 +553,7 @@ const EnhancedFormulaReviewDialog: React.FC<EnhancedFormulaReviewDialogProps> = 
                                       {...form.register(`ingredients.${index}.name`)}
                                       placeholder="INCI name"
                                       className="w-40"
+                                      maxLength={50}
                                     />
                                   </TableCell>
                                   <TableCell>
@@ -559,6 +561,7 @@ const EnhancedFormulaReviewDialog: React.FC<EnhancedFormulaReviewDialogProps> = 
                                       {...form.register(`ingredients.${index}.percentage`)}
                                       placeholder="Concentration %"
                                       className="w-24"
+                                      maxLength={50}
                                     />
                                   </TableCell>
                                   <TableCell>
@@ -567,6 +570,7 @@ const EnhancedFormulaReviewDialog: React.FC<EnhancedFormulaReviewDialogProps> = 
                                       readOnly
                                       className="w-48 bg-gray-50 text-sm"
                                       placeholder="Auto-filled chemical name"
+                                      maxLength={50}
                                     />
                                   </TableCell>
                                   <TableCell>
@@ -575,6 +579,7 @@ const EnhancedFormulaReviewDialog: React.FC<EnhancedFormulaReviewDialogProps> = 
                                       readOnly
                                       className="w-32 bg-gray-50 text-sm"
                                       placeholder="Auto-filled"
+                                      maxLength={50}
                                     />
                                   </TableCell>
                                   <TableCell>
@@ -583,6 +588,7 @@ const EnhancedFormulaReviewDialog: React.FC<EnhancedFormulaReviewDialogProps> = 
                                       readOnly
                                       className="w-32 bg-gray-50 text-sm"
                                       placeholder="Auto-filled"
+                                      maxLength={50}
                                     />
                                   </TableCell>
                                   <TableCell>
@@ -591,6 +597,7 @@ const EnhancedFormulaReviewDialog: React.FC<EnhancedFormulaReviewDialogProps> = 
                                       readOnly
                                       className="w-32 bg-gray-50 text-sm"
                                       placeholder="Auto-filled"
+                                      maxLength={50}
                                     />
                                   </TableCell>
                                   <TableCell>
@@ -599,6 +606,7 @@ const EnhancedFormulaReviewDialog: React.FC<EnhancedFormulaReviewDialogProps> = 
                                       readOnly
                                       className="w-32 bg-gray-50 text-sm"
                                       placeholder="Auto-filled"
+                                      maxLength={50}
                                     />
                                   </TableCell>
                                   <TableCell>
@@ -615,6 +623,7 @@ const EnhancedFormulaReviewDialog: React.FC<EnhancedFormulaReviewDialogProps> = 
                                       {...form.register(`ingredients.${index}.notes`)}
                                       placeholder="Additional notes"
                                       className="w-48"
+                                      maxLength={50}
                                     />
                                   </TableCell>
                                   <TableCell>
