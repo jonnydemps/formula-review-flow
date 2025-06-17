@@ -518,8 +518,8 @@ const EnhancedFormulaReviewDialog: React.FC<EnhancedFormulaReviewDialogProps> = 
                       </div>
                     </div>
                     
-                    <div className="flex-1 overflow-hidden border rounded-md">
-                      <ScrollArea className="w-full h-full">
+                    <div className="flex-1 border rounded-md overflow-hidden">
+                      <ScrollArea className="w-full h-full" style={{ maxHeight: '400px' }}>
                         <div className="min-w-[1400px] p-2">
                           <Table>
                             <TableHeader>
