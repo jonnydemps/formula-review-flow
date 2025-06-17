@@ -12,8 +12,8 @@ interface FormulaReportData {
 export const generateFormulaPDF = (reportData: FormulaReportData): void => {
   const { formula, reviewData, reviewerName, reviewDate } = reportData;
   
-  // Create new PDF document
-  const doc = new jsPDF();
+  // Create new PDF document in landscape mode for better table display
+  const doc = new jsPDF('landscape');
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
   let yPosition = 20;
@@ -81,7 +81,7 @@ export const generateFormulaPDF = (reportData: FormulaReportData): void => {
     doc.setFontSize(11);
     doc.setTextColor(darkGray);
     
-    // Split long text into multiple lines
+    // Split long text into multiple lines with increased width for landscape
     const splitNotes = doc.splitTextToSize(reviewData.reviewNotes, pageWidth - 40);
     doc.text(splitNotes, 20, yPosition);
     yPosition += splitNotes.length * 7 + 10;
@@ -93,13 +93,13 @@ export const generateFormulaPDF = (reportData: FormulaReportData): void => {
   doc.text('Ingredient Analysis', 20, yPosition);
   yPosition += 15;
   
-  // Table headers
-  doc.setFontSize(9);
+  // Table headers with optimized widths for landscape mode
+  doc.setFontSize(8);
   doc.setTextColor(darkGray);
   doc.setFont(undefined, 'bold');
   
-  const headers = ['CAS Number', 'INCI Name', 'Conc. %', 'Chemical Name', 'AICS', 'SIR', 'SUSMP', 'NZOIC', 'Compliant'];
-  const colWidths = [22, 35, 15, 30, 15, 15, 15, 15, 18];
+  const headers = ['CAS Number', 'INCI Name', 'Conc. %', 'Chemical Name', 'AICS', 'SIR', 'SUSMP', 'NZOIC', 'Compliant', 'Notes'];
+  const colWidths = [25, 35, 15, 45, 18, 18, 18, 18, 15, 35]; // Increased widths for better readability
   let xPosition = 20;
   
   headers.forEach((header, index) => {
@@ -114,12 +114,12 @@ export const generateFormulaPDF = (reportData: FormulaReportData): void => {
   
   // Ingredient rows
   doc.setFont(undefined, 'normal');
-  doc.setFontSize(8);
+  doc.setFontSize(7); // Slightly smaller font for better fit
   
   reviewData.ingredients.forEach((ingredient: Ingredient) => {
     // Check if we need a new page
     if (yPosition > pageHeight - 30) {
-      doc.addPage();
+      doc.addPage('landscape');
       yPosition = 20;
     }
     
@@ -133,10 +133,12 @@ export const generateFormulaPDF = (reportData: FormulaReportData): void => {
       ingredient.sir || '-',
       ingredient.susmp || '-',
       ingredient.nzoic || '-',
-      ingredient.compliant ? 'Yes' : 'No'
+      ingredient.compliant ? 'Yes' : 'No',
+      ingredient.notes || '-'
     ];
     
     rowData.forEach((data, index) => {
+      // Use splitTextToSize for longer text fields to handle wrapping
       const splitText = doc.splitTextToSize(data, colWidths[index] - 2);
       doc.text(splitText, xPosition, yPosition);
       xPosition += colWidths[index];
@@ -149,7 +151,7 @@ export const generateFormulaPDF = (reportData: FormulaReportData): void => {
   
   // Check if we need a new page for the footer
   if (yPosition > pageHeight - 60) {
-    doc.addPage();
+    doc.addPage('landscape');
     yPosition = 20;
   }
   

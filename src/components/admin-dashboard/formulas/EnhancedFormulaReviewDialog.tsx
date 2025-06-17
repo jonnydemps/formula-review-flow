@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   Dialog,
@@ -19,6 +18,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Table,
   TableHeader,
@@ -382,7 +382,7 @@ const EnhancedFormulaReviewDialog: React.FC<EnhancedFormulaReviewDialogProps> = 
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-[95vw] max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
@@ -393,21 +393,21 @@ const EnhancedFormulaReviewDialog: React.FC<EnhancedFormulaReviewDialogProps> = 
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="flex-1 overflow-hidden">
           {error && (
-            <Alert variant="destructive">
+            <Alert variant="destructive" className="mb-4">
               <AlertTriangle className="h-4 w-4 mr-2" />
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 h-full">
             <div className="lg:col-span-1">
               <h3 className="font-semibold mb-2">Formula Details</h3>
               <div className="space-y-2 text-sm">
-                <div className="grid grid-cols-2 gap-1">
+                <div className="grid grid-cols-1 gap-1">
                   <span className="font-medium">File:</span>
-                  <span className="truncate">{formula.original_filename}</span>
+                  <span className="truncate text-xs">{formula.original_filename}</span>
                   
                   <span className="font-medium">Status:</span>
                   <span><StatusBadge status={formula.status} /></span>
@@ -418,7 +418,7 @@ const EnhancedFormulaReviewDialog: React.FC<EnhancedFormulaReviewDialogProps> = 
                 
                 <div className="pt-2 space-y-2">
                   {fileUrl && (
-                    <Button size="sm" variant="outline" onClick={() => window.open(fileUrl, '_blank')}>
+                    <Button size="sm" variant="outline" onClick={() => window.open(fileUrl, '_blank')} className="w-full">
                       View Original File
                     </Button>
                   )}
@@ -441,9 +441,9 @@ const EnhancedFormulaReviewDialog: React.FC<EnhancedFormulaReviewDialogProps> = 
               </div>
             </div>
 
-            <div className="lg:col-span-2">
+            <div className="lg:col-span-3 flex flex-col overflow-hidden">
               <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 flex flex-col h-full">
                   <div className="grid grid-cols-2 gap-4">
                     <FormField
                       control={form.control}
@@ -491,8 +491,8 @@ const EnhancedFormulaReviewDialog: React.FC<EnhancedFormulaReviewDialogProps> = 
                     )}
                   />
 
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center">
+                  <div className="flex-1 flex flex-col overflow-hidden">
+                    <div className="flex justify-between items-center mb-4">
                       <h3 className="font-semibold">Ingredients</h3>
                       <div className="flex gap-2">
                         <AutoCompleteButton
@@ -518,119 +518,126 @@ const EnhancedFormulaReviewDialog: React.FC<EnhancedFormulaReviewDialogProps> = 
                       </div>
                     </div>
                     
-                    <div className="overflow-x-auto">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead className="w-28">CAS Number</TableHead>
-                            <TableHead>INCI Name</TableHead>
-                            <TableHead className="w-20">Conc. %</TableHead>
-                            <TableHead className="w-32">Chemical Name</TableHead>
-                            <TableHead className="w-20">AICS</TableHead>
-                            <TableHead className="w-20">SIR</TableHead>
-                            <TableHead className="w-20">SUSMP</TableHead>
-                            <TableHead className="w-20">NZOIC</TableHead>
-                            <TableHead className="w-20">Compliant</TableHead>
-                            <TableHead>Notes</TableHead>
-                            <TableHead className="w-12"></TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {form.watch('ingredients').map((ingredient, index) => (
-                            <TableRow key={index}>
-                              <TableCell>
-                                <Input
-                                  {...form.register(`ingredients.${index}.casNumber`)}
-                                  placeholder="CAS #"
-                                  className="text-xs"
-                                />
-                              </TableCell>
-                              <TableCell>
-                                <Input
-                                  {...form.register(`ingredients.${index}.name`)}
-                                  placeholder="INCI name"
-                                />
-                              </TableCell>
-                              <TableCell>
-                                <Input
-                                  {...form.register(`ingredients.${index}.percentage`)}
-                                  placeholder="%"
-                                />
-                              </TableCell>
-                              <TableCell>
-                                <Input
-                                  value={ingredient.chemicalName || ''}
-                                  readOnly
-                                  className="bg-gray-50 text-xs"
-                                  placeholder="Auto-filled"
-                                />
-                              </TableCell>
-                              <TableCell>
-                                <Input
-                                  value={ingredient.aicsListed || ''}
-                                  readOnly
-                                  className="bg-gray-50 text-xs"
-                                  placeholder="Auto"
-                                />
-                              </TableCell>
-                              <TableCell>
-                                <Input
-                                  value={ingredient.sir || ''}
-                                  readOnly
-                                  className="bg-gray-50 text-xs"
-                                  placeholder="Auto"
-                                />
-                              </TableCell>
-                              <TableCell>
-                                <Input
-                                  value={ingredient.susmp || ''}
-                                  readOnly
-                                  className="bg-gray-50 text-xs"
-                                  placeholder="Auto"
-                                />
-                              </TableCell>
-                              <TableCell>
-                                <Input
-                                  value={ingredient.nzoic || ''}
-                                  readOnly
-                                  className="bg-gray-50 text-xs"
-                                  placeholder="Auto"
-                                />
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex items-center justify-center">
-                                  <input
-                                    type="checkbox"
-                                    {...form.register(`ingredients.${index}.compliant`)}
-                                    className="rounded border-gray-300 text-primary focus:ring-primary"
-                                  />
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <Input
-                                  {...form.register(`ingredients.${index}.notes`)}
-                                  placeholder="Notes"
-                                />
-                              </TableCell>
-                              <TableCell>
-                                <Button 
-                                  type="button" 
-                                  variant="ghost" 
-                                  size="sm"
-                                  onClick={() => removeIngredient(index)} 
-                                  disabled={form.watch('ingredients').length <= 1}
-                                >
-                                  <X className="h-4 w-4" />
-                                </Button>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
+                    <div className="flex-1 overflow-hidden">
+                      <ScrollArea className="w-full h-full">
+                        <div className="min-w-[1400px]">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead className="w-32">CAS Number</TableHead>
+                                <TableHead className="w-40">INCI Name</TableHead>
+                                <TableHead className="w-24">Conc. %</TableHead>
+                                <TableHead className="w-48">Chemical Name</TableHead>
+                                <TableHead className="w-32">AICS Listed</TableHead>
+                                <TableHead className="w-32">SIR</TableHead>
+                                <TableHead className="w-32">SUSMP</TableHead>
+                                <TableHead className="w-32">NZOIC</TableHead>
+                                <TableHead className="w-24">Compliant</TableHead>
+                                <TableHead className="w-48">Notes</TableHead>
+                                <TableHead className="w-12"></TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {form.watch('ingredients').map((ingredient, index) => (
+                                <TableRow key={index}>
+                                  <TableCell>
+                                    <Input
+                                      {...form.register(`ingredients.${index}.casNumber`)}
+                                      placeholder="CAS Number"
+                                      className="w-32 text-sm"
+                                    />
+                                  </TableCell>
+                                  <TableCell>
+                                    <Input
+                                      {...form.register(`ingredients.${index}.name`)}
+                                      placeholder="INCI name"
+                                      className="w-40"
+                                    />
+                                  </TableCell>
+                                  <TableCell>
+                                    <Input
+                                      {...form.register(`ingredients.${index}.percentage`)}
+                                      placeholder="Concentration %"
+                                      className="w-24"
+                                    />
+                                  </TableCell>
+                                  <TableCell>
+                                    <Input
+                                      value={ingredient.chemicalName || ''}
+                                      readOnly
+                                      className="w-48 bg-gray-50 text-sm"
+                                      placeholder="Auto-filled chemical name"
+                                    />
+                                  </TableCell>
+                                  <TableCell>
+                                    <Input
+                                      value={ingredient.aicsListed || ''}
+                                      readOnly
+                                      className="w-32 bg-gray-50 text-sm"
+                                      placeholder="Auto-filled"
+                                    />
+                                  </TableCell>
+                                  <TableCell>
+                                    <Input
+                                      value={ingredient.sir || ''}
+                                      readOnly
+                                      className="w-32 bg-gray-50 text-sm"
+                                      placeholder="Auto-filled"
+                                    />
+                                  </TableCell>
+                                  <TableCell>
+                                    <Input
+                                      value={ingredient.susmp || ''}
+                                      readOnly
+                                      className="w-32 bg-gray-50 text-sm"
+                                      placeholder="Auto-filled"
+                                    />
+                                  </TableCell>
+                                  <TableCell>
+                                    <Input
+                                      value={ingredient.nzoic || ''}
+                                      readOnly
+                                      className="w-32 bg-gray-50 text-sm"
+                                      placeholder="Auto-filled"
+                                    />
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="flex items-center justify-center">
+                                      <input
+                                        type="checkbox"
+                                        {...form.register(`ingredients.${index}.compliant`)}
+                                        className="rounded border-gray-300 text-primary focus:ring-primary"
+                                      />
+                                    </div>
+                                  </TableCell>
+                                  <TableCell>
+                                    <Input
+                                      {...form.register(`ingredients.${index}.notes`)}
+                                      placeholder="Additional notes"
+                                      className="w-48"
+                                    />
+                                  </TableCell>
+                                  <TableCell>
+                                    <Button 
+                                      type="button" 
+                                      variant="ghost" 
+                                      size="sm"
+                                      onClick={() => removeIngredient(index)} 
+                                      disabled={form.watch('ingredients').length <= 1}
+                                    >
+                                      <X className="h-4 w-4" />
+                                    </Button>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      </ScrollArea>
                     </div>
                   </div>
                   
-                  <DialogFooter className="gap-2">
+                  <DialogFooter className="gap-2 pt-4 border-t">
                     <Button type="button" variant="outline" onClick={onClose}>
                       Cancel
                     </Button>
