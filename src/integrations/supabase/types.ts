@@ -59,6 +59,66 @@ export type Database = {
           },
         ]
       }
+      master_ingredients: {
+        Row: {
+          aics_listed: string | null
+          cas_number: string
+          chemical_name: string | null
+          created_at: string
+          id: string
+          nzoic: string | null
+          specific_information_requirement: string | null
+          susmp: string | null
+          updated_at: string
+        }
+        Insert: {
+          aics_listed?: string | null
+          cas_number: string
+          chemical_name?: string | null
+          created_at?: string
+          id?: string
+          nzoic?: string | null
+          specific_information_requirement?: string | null
+          susmp?: string | null
+          updated_at?: string
+        }
+        Update: {
+          aics_listed?: string | null
+          cas_number?: string
+          chemical_name?: string | null
+          created_at?: string
+          id?: string
+          nzoic?: string | null
+          specific_information_requirement?: string | null
+          susmp?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      master_ingredients_uploads: {
+        Row: {
+          filename: string
+          id: string
+          records_count: number
+          upload_date: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          filename: string
+          id?: string
+          records_count?: number
+          upload_date?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          filename?: string
+          id?: string
+          records_count?: number
+          upload_date?: string
+          uploaded_by?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string | null

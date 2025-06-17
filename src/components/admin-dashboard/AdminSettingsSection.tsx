@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Settings } from 'lucide-react';
 import SystemConfigurationCard from './settings/SystemConfigurationCard';
 import SecuritySettingsCard from './settings/SecuritySettingsCard';
+import MasterIngredientsUploader from './master-ingredients/MasterIngredientsUploader';
 
 interface AdminSettingsSectionProps {
   onBack: () => void;
@@ -32,6 +33,7 @@ const AdminSettingsSection: React.FC<AdminSettingsSectionProps> = ({ onBack }) =
         </CardContent>
       </Card>
 
+      <MasterIngredientsUploader />
       <SystemConfigurationCard />
       <SecuritySettingsCard />
     </div>
