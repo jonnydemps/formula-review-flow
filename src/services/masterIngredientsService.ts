@@ -39,6 +39,7 @@ export const parseMasterIngredientsExcel = async (file: File): Promise<ParsedMas
         
         // Parse ingredients starting from row 1 (assuming headers in row 0)
         const ingredients: ParsedMasterIngredient[] = [];
+        const seenCasNumbers = new Set<string>();
         
         for (let i = 1; i < jsonData.length; i++) {
           const row = jsonData[i] as any[];
@@ -50,8 +51,9 @@ export const parseMasterIngredientsExcel = async (file: File): Promise<ParsedMas
             const susmp = row[4]?.toString().trim() || '';
             const nzoic = row[5]?.toString().trim() || '';
             
-            // Only add if we have at least a CAS number
-            if (cas_number) {
+            // Only add if we have a CAS number and it's not a duplicate
+            if (cas_number && !seenCasNumbers.has(cas_number)) {
+              seenCasNumbers.add(cas_number);
               ingredients.push({
                 cas_number,
                 chemical_name,
@@ -60,6 +62,8 @@ export const parseMasterIngredientsExcel = async (file: File): Promise<ParsedMas
                 susmp,
                 nzoic
               });
+            } else if (cas_number && seenCasNumbers.has(cas_number)) {
+              console.warn(`Duplicate CAS number found and skipped: ${cas_number}`);
             }
           }
         }
@@ -87,34 +91,51 @@ export const uploadMasterIngredients = async (ingredients: ParsedMasterIngredien
       throw new Error('User not authenticated');
     }
 
-    // Clear existing master ingredients
+    console.log(`Starting upload of ${ingredients.length} master ingredients...`);
+
+    // Use a transaction-like approach by first clearing, then inserting
+    // Step 1: Clear existing master ingredients
     const { error: deleteError } = await supabase
       .from('master_ingredients')
       .delete()
-      .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all
+      .gte('id', '00000000-0000-0000-0000-000000000000'); // Delete all records
 
     if (deleteError) {
       console.error('Error clearing existing master ingredients:', deleteError);
-      throw deleteError;
+      throw new Error(`Failed to clear existing data: ${deleteError.message}`);
     }
 
-    // Insert new master ingredients
-    const { error: insertError } = await supabase
-      .from('master_ingredients')
-      .insert(ingredients);
+    console.log('Cleared existing master ingredients');
 
-    if (insertError) {
-      console.error('Error inserting master ingredients:', insertError);
-      throw insertError;
+    // Step 2: Insert new master ingredients in batches to avoid large payload issues
+    const batchSize = 100;
+    let totalInserted = 0;
+
+    for (let i = 0; i < ingredients.length; i += batchSize) {
+      const batch = ingredients.slice(i, i + batchSize);
+      
+      const { error: insertError } = await supabase
+        .from('master_ingredients')
+        .insert(batch);
+
+      if (insertError) {
+        console.error('Error inserting master ingredients batch:', insertError);
+        throw new Error(`Failed to insert batch starting at index ${i}: ${insertError.message}`);
+      }
+
+      totalInserted += batch.length;
+      console.log(`Inserted batch ${Math.floor(i / batchSize) + 1}, total inserted: ${totalInserted}`);
     }
 
-    // Log the upload
+    console.log(`Successfully inserted all ${totalInserted} master ingredients`);
+
+    // Step 3: Log the upload
     const { error: logError } = await supabase
       .from('master_ingredients_uploads')
       .insert({
         filename,
         uploaded_by: user.id,
-        records_count: ingredients.length
+        records_count: totalInserted
       });
 
     if (logError) {
@@ -122,7 +143,7 @@ export const uploadMasterIngredients = async (ingredients: ParsedMasterIngredien
       // Don't throw here as the main operation succeeded
     }
 
-    return { success: true, count: ingredients.length };
+    return { success: true, count: totalInserted };
   } catch (error: unknown) {
     console.error('Upload master ingredients error:', error);
     const message = error instanceof Error ? error.message : "Unknown error";
