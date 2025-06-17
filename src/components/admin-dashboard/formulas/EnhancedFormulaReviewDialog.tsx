@@ -376,8 +376,8 @@ const EnhancedFormulaReviewDialog: React.FC<EnhancedFormulaReviewDialogProps> = 
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-[95vw] max-h-[90vh] p-0 overflow-hidden flex flex-col">
-        <DialogHeader className="px-6 py-4 border-b">
+      <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 overflow-hidden flex flex-col">
+        <DialogHeader className="px-6 py-4 border-b flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
             Enhanced Formula Review
@@ -387,7 +387,7 @@ const EnhancedFormulaReviewDialog: React.FC<EnhancedFormulaReviewDialogProps> = 
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 overflow-hidden min-h-0">
           {error && (
             <Alert variant="destructive" className="mx-6 mt-4">
               <AlertTriangle className="h-4 w-4 mr-2" />
@@ -395,9 +395,9 @@ const EnhancedFormulaReviewDialog: React.FC<EnhancedFormulaReviewDialogProps> = 
             </Alert>
           )}
 
-          <div className="h-full overflow-auto">
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 p-6 min-h-full">
-              <div className="lg:col-span-1">
+          <div className="h-full">
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 p-6 h-full">
+              <div className="lg:col-span-1 flex-shrink-0">
                 <h3 className="font-semibold mb-2">Formula Details</h3>
                 <div className="space-y-2 text-sm">
                   <div className="grid grid-cols-1 gap-1">
@@ -439,28 +439,48 @@ const EnhancedFormulaReviewDialog: React.FC<EnhancedFormulaReviewDialogProps> = 
               <div className="lg:col-span-3 flex flex-col min-h-0">
                 <Form {...form}>
                   <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 flex flex-col h-full">
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="flex-shrink-0">
+                      <div className="grid grid-cols-2 gap-4 mb-4">
+                        <FormField
+                          control={form.control}
+                          name="productName"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Product Name</FormLabel>
+                              <FormControl>
+                                <Input placeholder="Product name" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="formulaNumber"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Formula Number</FormLabel>
+                              <FormControl>
+                                <Input placeholder="Formula number" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
                       <FormField
                         control={form.control}
-                        name="productName"
+                        name="reviewNotes"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Product Name</FormLabel>
+                            <FormLabel>Review Notes</FormLabel>
                             <FormControl>
-                              <Input placeholder="Product name" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="formulaNumber"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Formula Number</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Formula number" {...field} />
+                              <Textarea 
+                                placeholder="Enter general notes about this formula..." 
+                                className="min-h-[60px]" 
+                                {...field} 
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -468,26 +488,8 @@ const EnhancedFormulaReviewDialog: React.FC<EnhancedFormulaReviewDialogProps> = 
                       />
                     </div>
 
-                    <FormField
-                      control={form.control}
-                      name="reviewNotes"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Review Notes</FormLabel>
-                          <FormControl>
-                            <Textarea 
-                              placeholder="Enter general notes about this formula..." 
-                              className="min-h-[80px]" 
-                              {...field} 
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
                     <div className="flex-1 flex flex-col min-h-0">
-                      <div className="flex justify-between items-center mb-4">
+                      <div className="flex justify-between items-center mb-4 flex-shrink-0">
                         <h3 className="font-semibold">Ingredients</h3>
                         <div className="flex gap-2">
                           <AutoCompleteButton
@@ -513,11 +515,8 @@ const EnhancedFormulaReviewDialog: React.FC<EnhancedFormulaReviewDialogProps> = 
                         </div>
                       </div>
                       
-                      <div className="flex-1 border rounded-md overflow-hidden relative">
-                        <div className="absolute inset-0 overflow-auto" style={{ 
-                          scrollbarWidth: 'thin',
-                          scrollbarColor: '#cbd5e1 #f1f5f9'
-                        }}>
+                      <div className="flex-1 min-h-0">
+                        <ScrollArea className="h-[400px] w-full border rounded-md">
                           <div className="min-w-[1400px] p-4">
                             <Table>
                               <TableHeader>
@@ -631,7 +630,7 @@ const EnhancedFormulaReviewDialog: React.FC<EnhancedFormulaReviewDialogProps> = 
                               </TableBody>
                             </Table>
                           </div>
-                        </div>
+                        </ScrollArea>
                       </div>
                     </div>
                   </form>
@@ -641,7 +640,7 @@ const EnhancedFormulaReviewDialog: React.FC<EnhancedFormulaReviewDialogProps> = 
           </div>
         </div>
         
-        <DialogFooter className="gap-2 p-6 border-t bg-white">
+        <DialogFooter className="gap-2 p-6 border-t bg-white flex-shrink-0">
           <Button type="button" variant="outline" onClick={onClose}>
             Cancel
           </Button>
