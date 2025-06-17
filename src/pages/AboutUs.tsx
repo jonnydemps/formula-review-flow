@@ -34,7 +34,7 @@ const AboutUs: React.FC = () => {
                 <div className="rounded-xl overflow-hidden border border-gray-200 shadow-md">
                   <AspectRatio ratio={3/4}>
                     <img 
-                      src="https://images.unsplash.com/photo-1581092795360-fd1ca04f0952?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80"
+                      src="/lovable-uploads/e180189e-bf12-4441-baad-f3e0d4909d42.png"
                       alt="John Dempsey - Founder & Principal Regulatory Consultant"
                       className="w-full h-full object-cover"
                     />
