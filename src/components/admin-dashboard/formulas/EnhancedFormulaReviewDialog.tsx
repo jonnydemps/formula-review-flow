@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   Dialog,
@@ -39,6 +38,7 @@ import { getFormulaFileUrl } from '@/services/formulaService';
 import { parseFormulaExcel, generateMasterExcel, ParsedFormulaData } from '@/services/excelParsingService';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import AutoCompleteButton from './AutoCompleteButton';
 
 // Define validation schema
 const reviewFormSchema = z.object({
@@ -220,6 +220,18 @@ const EnhancedFormulaReviewDialog: React.FC<EnhancedFormulaReviewDialogProps> = 
       updatedIngredients.splice(index, 1);
       form.setValue('ingredients', updatedIngredients);
     }
+  };
+
+  const handleAutoCompleteUpdate = (updatedIngredients: Ingredient[]) => {
+    console.log('Auto-complete updated ingredients:', updatedIngredients);
+    form.setValue('ingredients', updatedIngredients.map(ing => ({
+      id: ing.id,
+      name: ing.name,
+      percentage: ing.percentage || '',
+      compliant: ing.compliant,
+      notes: ing.notes || '',
+      casNumber: ing.casNumber || ''
+    })));
   };
 
   const onSubmit = async (data: ReviewFormValues) => {
@@ -414,9 +426,23 @@ const EnhancedFormulaReviewDialog: React.FC<EnhancedFormulaReviewDialogProps> = 
                   <div className="space-y-4">
                     <div className="flex justify-between items-center">
                       <h3 className="font-semibold">Ingredients</h3>
-                      <Button type="button" size="sm" onClick={addIngredient}>
-                        <Plus className="h-4 w-4 mr-1" /> Add Ingredient
-                      </Button>
+                      <div className="flex gap-2">
+                        <AutoCompleteButton
+                          ingredients={form.watch('ingredients').map(ing => ({
+                            id: ing.id,
+                            name: ing.name,
+                            percentage: ing.percentage,
+                            compliant: ing.compliant,
+                            notes: ing.notes || '',
+                            casNumber: ing.casNumber || ''
+                          }))}
+                          onIngredientsUpdate={handleAutoCompleteUpdate}
+                          disabled={form.watch('ingredients').length === 0}
+                        />
+                        <Button type="button" size="sm" onClick={addIngredient}>
+                          <Plus className="h-4 w-4 mr-1" /> Add Ingredient
+                        </Button>
+                      </div>
                     </div>
                     
                     <div className="overflow-x-auto">
