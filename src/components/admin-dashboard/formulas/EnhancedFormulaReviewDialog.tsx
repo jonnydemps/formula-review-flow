@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { 
   Dialog,
@@ -52,7 +53,6 @@ const reviewFormSchema = z.object({
     name: z.string().min(1, 'Ingredient name is required'),
     percentage: z.string().optional(),
     compliant: z.boolean(),
-    notes: z.string().optional(),
     casNumber: z.string().optional(),
     chemicalName: z.string().optional(),
     aicsListed: z.string().optional(),
@@ -98,7 +98,6 @@ const EnhancedFormulaReviewDialog: React.FC<EnhancedFormulaReviewDialogProps> = 
           name: '', 
           percentage: '', 
           compliant: true, 
-          notes: '', 
           casNumber: '',
           chemicalName: '',
           aicsListed: '',
@@ -160,7 +159,6 @@ const EnhancedFormulaReviewDialog: React.FC<EnhancedFormulaReviewDialogProps> = 
           name: '', 
           percentage: '', 
           compliant: true, 
-          notes: '', 
           casNumber: '',
           chemicalName: '',
           aicsListed: '',
@@ -196,7 +194,6 @@ const EnhancedFormulaReviewDialog: React.FC<EnhancedFormulaReviewDialogProps> = 
         name: ing.inciName,
         percentage: ing.concentration,
         compliant: true,
-        notes: '',
         casNumber: ing.casNumber,
         chemicalName: '',
         aicsListed: '',
@@ -243,7 +240,6 @@ const EnhancedFormulaReviewDialog: React.FC<EnhancedFormulaReviewDialogProps> = 
         name: '', 
         percentage: '', 
         compliant: true, 
-        notes: '',
         casNumber: '',
         chemicalName: '',
         aicsListed: '',
@@ -270,7 +266,6 @@ const EnhancedFormulaReviewDialog: React.FC<EnhancedFormulaReviewDialogProps> = 
       name: ing.name,
       percentage: ing.percentage || '',
       compliant: ing.compliant,
-      notes: ing.notes || '',
       casNumber: ing.casNumber || '',
       chemicalName: ing.chemicalName || '',
       aicsListed: ing.aicsListed || '',
@@ -291,7 +286,7 @@ const EnhancedFormulaReviewDialog: React.FC<EnhancedFormulaReviewDialogProps> = 
         name: ing.name,
         percentage: ing.percentage || '',
         compliant: ing.compliant,
-        notes: ing.notes || '',
+        notes: '', // Empty notes as requested
         casNumber: ing.casNumber || '',
         chemicalName: ing.chemicalName || '',
         aicsListed: ing.aicsListed || '',
@@ -334,7 +329,7 @@ const EnhancedFormulaReviewDialog: React.FC<EnhancedFormulaReviewDialogProps> = 
         name: ing.name,
         percentage: ing.percentage || '',
         compliant: ing.compliant,
-        notes: ing.notes || '',
+        notes: '', // Empty notes as requested
         casNumber: ing.casNumber || '',
         chemicalName: ing.chemicalName || '',
         aicsListed: ing.aicsListed || '',
@@ -491,7 +486,7 @@ const EnhancedFormulaReviewDialog: React.FC<EnhancedFormulaReviewDialogProps> = 
                     )}
                   />
 
-                  <div className="flex-1 flex flex-col overflow-hidden">
+                  <div className="flex-1 flex flex-col min-h-0">
                     <div className="flex justify-between items-center mb-4">
                       <h3 className="font-semibold">Ingredients</h3>
                       <div className="flex gap-2">
@@ -501,7 +496,7 @@ const EnhancedFormulaReviewDialog: React.FC<EnhancedFormulaReviewDialogProps> = 
                             name: ing.name,
                             percentage: ing.percentage,
                             compliant: ing.compliant,
-                            notes: ing.notes || '',
+                            notes: '',
                             casNumber: ing.casNumber || '',
                             chemicalName: ing.chemicalName || '',
                             aicsListed: ing.aicsListed || '',
@@ -518,9 +513,9 @@ const EnhancedFormulaReviewDialog: React.FC<EnhancedFormulaReviewDialogProps> = 
                       </div>
                     </div>
                     
-                    <div className="flex-1 border rounded-md overflow-hidden">
-                      <ScrollArea className="w-full h-full" style={{ maxHeight: '400px' }}>
-                        <div className="min-w-[1400px] p-2">
+                    <div className="flex-1 border rounded-md overflow-hidden min-h-0">
+                      <ScrollArea className="w-full h-full">
+                        <div className="min-w-[1200px] p-2">
                           <Table>
                             <TableHeader>
                               <TableRow>
@@ -533,7 +528,6 @@ const EnhancedFormulaReviewDialog: React.FC<EnhancedFormulaReviewDialogProps> = 
                                 <TableHead className="w-32">SUSMP</TableHead>
                                 <TableHead className="w-32">NZOIC</TableHead>
                                 <TableHead className="w-24">Compliant</TableHead>
-                                <TableHead className="w-48">Notes</TableHead>
                                 <TableHead className="w-12"></TableHead>
                               </TableRow>
                             </TableHeader>
@@ -619,14 +613,6 @@ const EnhancedFormulaReviewDialog: React.FC<EnhancedFormulaReviewDialogProps> = 
                                     </div>
                                   </TableCell>
                                   <TableCell>
-                                    <Input
-                                      {...form.register(`ingredients.${index}.notes`)}
-                                      placeholder="Additional notes"
-                                      className="w-48"
-                                      maxLength={50}
-                                    />
-                                  </TableCell>
-                                  <TableCell>
                                     <Button 
                                       type="button" 
                                       variant="ghost" 
@@ -646,7 +632,7 @@ const EnhancedFormulaReviewDialog: React.FC<EnhancedFormulaReviewDialogProps> = 
                     </div>
                   </div>
                   
-                  <DialogFooter className="gap-2 pt-4 border-t">
+                  <DialogFooter className="gap-2 pt-4 border-t flex-shrink-0">
                     <Button type="button" variant="outline" onClick={onClose}>
                       Cancel
                     </Button>
