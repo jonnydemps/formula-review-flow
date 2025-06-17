@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { 
   Dialog,
@@ -41,7 +42,7 @@ import { supabase } from '@/integrations/supabase/client';
 import AutoCompleteButton from './AutoCompleteButton';
 import { generateFormulaPDF } from '@/services/pdfReportService';
 
-// Define validation schema
+// Define validation schema with all regulatory fields
 const reviewFormSchema = z.object({
   reviewNotes: z.string().min(1, 'Review notes are required'),
   productName: z.string().optional(),
@@ -52,7 +53,12 @@ const reviewFormSchema = z.object({
     percentage: z.string().optional(),
     compliant: z.boolean(),
     notes: z.string().optional(),
-    casNumber: z.string().optional()
+    casNumber: z.string().optional(),
+    chemicalName: z.string().optional(),
+    aicsListed: z.string().optional(),
+    sir: z.string().optional(),
+    susmp: z.string().optional(),
+    nzoic: z.string().optional()
   }))
 });
 
@@ -87,7 +93,19 @@ const EnhancedFormulaReviewDialog: React.FC<EnhancedFormulaReviewDialogProps> = 
       productName: '',
       formulaNumber: '',
       ingredients: [
-        { id: '1', name: '', percentage: '', compliant: true, notes: '', casNumber: '' }
+        { 
+          id: '1', 
+          name: '', 
+          percentage: '', 
+          compliant: true, 
+          notes: '', 
+          casNumber: '',
+          chemicalName: '',
+          aicsListed: '',
+          sir: '',
+          susmp: '',
+          nzoic: ''
+        }
       ]
     }
   });
@@ -137,7 +155,19 @@ const EnhancedFormulaReviewDialog: React.FC<EnhancedFormulaReviewDialogProps> = 
         reviewNotes: '',
         productName: '',
         formulaNumber: '',
-        ingredients: [{ id: '1', name: '', percentage: '', compliant: true, notes: '', casNumber: '' }]
+        ingredients: [{ 
+          id: '1', 
+          name: '', 
+          percentage: '', 
+          compliant: true, 
+          notes: '', 
+          casNumber: '',
+          chemicalName: '',
+          aicsListed: '',
+          sir: '',
+          susmp: '',
+          nzoic: ''
+        }]
       });
       setFileUrl(null);
       setExistingReview(null);
@@ -167,7 +197,12 @@ const EnhancedFormulaReviewDialog: React.FC<EnhancedFormulaReviewDialogProps> = 
         percentage: ing.concentration,
         compliant: true,
         notes: '',
-        casNumber: ing.casNumber
+        casNumber: ing.casNumber,
+        chemicalName: '',
+        aicsListed: '',
+        sir: '',
+        susmp: '',
+        nzoic: ''
       }));
       
       form.setValue('productName', parsed.productName);
@@ -209,7 +244,12 @@ const EnhancedFormulaReviewDialog: React.FC<EnhancedFormulaReviewDialogProps> = 
         percentage: '', 
         compliant: true, 
         notes: '',
-        casNumber: ''
+        casNumber: '',
+        chemicalName: '',
+        aicsListed: '',
+        sir: '',
+        susmp: '',
+        nzoic: ''
       }
     ]);
   };
@@ -231,7 +271,12 @@ const EnhancedFormulaReviewDialog: React.FC<EnhancedFormulaReviewDialogProps> = 
       percentage: ing.percentage || '',
       compliant: ing.compliant,
       notes: ing.notes || '',
-      casNumber: ing.casNumber || ''
+      casNumber: ing.casNumber || '',
+      chemicalName: ing.chemicalName || '',
+      aicsListed: ing.aicsListed || '',
+      sir: ing.sir || '',
+      susmp: ing.susmp || '',
+      nzoic: ing.nzoic || ''
     })));
   };
 
@@ -247,7 +292,12 @@ const EnhancedFormulaReviewDialog: React.FC<EnhancedFormulaReviewDialogProps> = 
         percentage: ing.percentage || '',
         compliant: ing.compliant,
         notes: ing.notes || '',
-        casNumber: ing.casNumber || ''
+        casNumber: ing.casNumber || '',
+        chemicalName: ing.chemicalName || '',
+        aicsListed: ing.aicsListed || '',
+        sir: ing.sir || '',
+        susmp: ing.susmp || '',
+        nzoic: ing.nzoic || ''
       }));
       
       // Create a properly typed ReviewData object
@@ -285,7 +335,12 @@ const EnhancedFormulaReviewDialog: React.FC<EnhancedFormulaReviewDialogProps> = 
         percentage: ing.percentage || '',
         compliant: ing.compliant,
         notes: ing.notes || '',
-        casNumber: ing.casNumber || ''
+        casNumber: ing.casNumber || '',
+        chemicalName: ing.chemicalName || '',
+        aicsListed: ing.aicsListed || '',
+        sir: ing.sir || '',
+        susmp: ing.susmp || '',
+        nzoic: ing.nzoic || ''
       }));
       
       // Create a properly typed ReviewData object
@@ -447,7 +502,12 @@ const EnhancedFormulaReviewDialog: React.FC<EnhancedFormulaReviewDialogProps> = 
                             percentage: ing.percentage,
                             compliant: ing.compliant,
                             notes: ing.notes || '',
-                            casNumber: ing.casNumber || ''
+                            casNumber: ing.casNumber || '',
+                            chemicalName: ing.chemicalName || '',
+                            aicsListed: ing.aicsListed || '',
+                            sir: ing.sir || '',
+                            susmp: ing.susmp || '',
+                            nzoic: ing.nzoic || ''
                           }))}
                           onIngredientsUpdate={handleAutoCompleteUpdate}
                           disabled={form.watch('ingredients').length === 0}
@@ -476,7 +536,7 @@ const EnhancedFormulaReviewDialog: React.FC<EnhancedFormulaReviewDialogProps> = 
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {form.watch('ingredients').map((_, index) => (
+                          {form.watch('ingredients').map((ingredient, index) => (
                             <TableRow key={index}>
                               <TableCell>
                                 <Input
@@ -499,7 +559,7 @@ const EnhancedFormulaReviewDialog: React.FC<EnhancedFormulaReviewDialogProps> = 
                               </TableCell>
                               <TableCell>
                                 <Input
-                                  value={form.watch(`ingredients.${index}.chemicalName`) || ''}
+                                  value={ingredient.chemicalName || ''}
                                   readOnly
                                   className="bg-gray-50 text-xs"
                                   placeholder="Auto-filled"
@@ -507,7 +567,7 @@ const EnhancedFormulaReviewDialog: React.FC<EnhancedFormulaReviewDialogProps> = 
                               </TableCell>
                               <TableCell>
                                 <Input
-                                  value={form.watch(`ingredients.${index}.aicsListed`) || ''}
+                                  value={ingredient.aicsListed || ''}
                                   readOnly
                                   className="bg-gray-50 text-xs"
                                   placeholder="Auto"
@@ -515,7 +575,7 @@ const EnhancedFormulaReviewDialog: React.FC<EnhancedFormulaReviewDialogProps> = 
                               </TableCell>
                               <TableCell>
                                 <Input
-                                  value={form.watch(`ingredients.${index}.sir`) || ''}
+                                  value={ingredient.sir || ''}
                                   readOnly
                                   className="bg-gray-50 text-xs"
                                   placeholder="Auto"
@@ -523,7 +583,7 @@ const EnhancedFormulaReviewDialog: React.FC<EnhancedFormulaReviewDialogProps> = 
                               </TableCell>
                               <TableCell>
                                 <Input
-                                  value={form.watch(`ingredients.${index}.susmp`) || ''}
+                                  value={ingredient.susmp || ''}
                                   readOnly
                                   className="bg-gray-50 text-xs"
                                   placeholder="Auto"
@@ -531,7 +591,7 @@ const EnhancedFormulaReviewDialog: React.FC<EnhancedFormulaReviewDialogProps> = 
                               </TableCell>
                               <TableCell>
                                 <Input
-                                  value={form.watch(`ingredients.${index}.nzoic`) || ''}
+                                  value={ingredient.nzoic || ''}
                                   readOnly
                                   className="bg-gray-50 text-xs"
                                   placeholder="Auto"
