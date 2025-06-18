@@ -4,10 +4,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { User } from '@/types/auth';
 import { fetchUserProfile } from '@/services/profileService';
 
-// Global state to prevent multiple initializations
-let isAuthInitialized = false;
-let globalAuthSubscription: any = null;
-
 interface UseAuthSubscriptionProps {
   setUser: (user: User | null) => void;
   setLoading: (loading: boolean) => void;
@@ -15,6 +11,7 @@ interface UseAuthSubscriptionProps {
 
 export const useAuthSubscription = ({ setUser, setLoading }: UseAuthSubscriptionProps) => {
   const mountedRef = useRef(true);
+  const subscriptionRef = useRef<any>(null);
 
   const handleProfileFetch = useCallback(async (authUser: any): Promise<User | null> => {
     try {
@@ -29,43 +26,23 @@ export const useAuthSubscription = ({ setUser, setLoading }: UseAuthSubscription
   }, []);
 
   const initializeAuth = useCallback(async () => {
-    if (isAuthInitialized) {
-      // Get current session if auth is already initialized
-      try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.error('Session check error:', error);
-          if (mountedRef.current) setLoading(false);
-          return;
-        }
-
-        if (session?.user && mountedRef.current) {
-          const userData = await handleProfileFetch(session.user);
-          if (userData && mountedRef.current) {
-            setUser(userData);
-          }
-        }
-        
-        if (mountedRef.current) setLoading(false);
-      } catch (error) {
-        console.error('Error checking session:', error);
-        if (mountedRef.current) setLoading(false);
-      }
-      return;
-    }
-
-    // First time initialization
-    console.log('Initializing auth for the first time...');
-    isAuthInitialized = true;
+    console.log('Initializing auth...');
     
     try {
+      // Clean up any existing subscription first
+      if (subscriptionRef.current) {
+        subscriptionRef.current.unsubscribe();
+        subscriptionRef.current = null;
+      }
+
       // Set up auth state listener
       const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
         console.log('Auth state changed:', event, session?.user?.id);
         
+        if (!mountedRef.current) return;
+        
         if (event === 'SIGNED_IN' && session?.user) {
-          if (mountedRef.current) setLoading(true);
+          setLoading(true);
           
           const userData = await handleProfileFetch(session.user);
           if (userData && mountedRef.current) {
@@ -88,7 +65,7 @@ export const useAuthSubscription = ({ setUser, setLoading }: UseAuthSubscription
         }
       });
 
-      globalAuthSubscription = subscription;
+      subscriptionRef.current = subscription;
 
       // Check for existing session
       console.log('Checking for existing session...');
@@ -121,11 +98,10 @@ export const useAuthSubscription = ({ setUser, setLoading }: UseAuthSubscription
   }, [setUser, setLoading, handleProfileFetch]);
 
   const cleanup = useCallback(() => {
-    if (globalAuthSubscription) {
-      console.log('Cleaning up global auth subscription');
-      globalAuthSubscription.unsubscribe();
-      globalAuthSubscription = null;
-      isAuthInitialized = false;
+    if (subscriptionRef.current) {
+      console.log('Cleaning up auth subscription');
+      subscriptionRef.current.unsubscribe();
+      subscriptionRef.current = null;
     }
   }, []);
 

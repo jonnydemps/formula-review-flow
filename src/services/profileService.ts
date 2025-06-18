@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 // Simplified cache - just store the profile data
 const profileCache = new Map<string, {user: User, timestamp: number}>();
-const CACHE_TTL = 60 * 1000; // 1 minute cache
+const CACHE_TTL = 30 * 1000; // Reduced to 30 seconds for debugging
 
 // Main profile fetch function
 export const fetchUserProfile = async (authUser: any): Promise<User> => {

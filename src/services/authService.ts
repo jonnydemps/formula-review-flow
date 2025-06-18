@@ -27,6 +27,10 @@ export type SignInResponse = SignInSuccess | SignInError;
 export const signIn = async (email: string, password: string): Promise<SignInResponse> => {
   try {
     console.log('Attempting sign in for:', email);
+    
+    // Clear any existing session first
+    await supabase.auth.signOut();
+    
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password
@@ -37,7 +41,6 @@ export const signIn = async (email: string, password: string): Promise<SignInRes
     // Determine the role
     const role = getDefaultRole(email);
     
-    // Since this is a success case, we need to adapt the Supabase response to match our SignInSuccess type
     const userData: User = {
       id: data.user?.id || '',
       email: data.user?.email || '',
@@ -73,8 +76,8 @@ export const signUp = async (email: string, password: string, role: UserRole, na
       password,
       options: {
         data: {
-          name: name, // Store name in user metadata for easier recovery if needed
-          role: role  // Store role in metadata as backup
+          name: name,
+          role: role
         }
       }
     });
@@ -90,8 +93,7 @@ export const signUp = async (email: string, password: string, role: UserRole, na
     
     console.log('Auth signup successful, user ID:', authData.user.id);
 
-    // Then create the user profile with role information - but don't worry if it fails
-    // We'll create it on first successful login
+    // Create the user profile
     try {
       const { error: profileError } = await supabase
         .from('profiles')
@@ -105,13 +107,11 @@ export const signUp = async (email: string, password: string, role: UserRole, na
 
       if (profileError) {
         console.log('Profile creation error:', profileError);
-        // Don't throw here, we'll continue with the signup process
       } else {
         console.log('Profile created successfully for role:', role);
       }
     } catch (profileError) {
       console.error('Profile creation exception:', profileError);
-      // Continue with the process, don't block signup
     }
     
     showSuccessToast('Account created successfully');
@@ -120,7 +120,6 @@ export const signUp = async (email: string, password: string, role: UserRole, na
   } catch (error: any) {
     console.error('Sign up error:', error);
     
-    // More user-friendly error messages
     if (error.message?.includes('already registered')) {
       showErrorToast('This email is already registered. Please sign in instead.', 'Registration Failed');
     } else if (error.message?.includes('password')) {
@@ -134,7 +133,13 @@ export const signUp = async (email: string, password: string, role: UserRole, na
 
 export const signOut = async () => {
   try {
-    await supabase.auth.signOut();
+    console.log('Signing out user...');
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.error('Sign out error:', error);
+      throw error;
+    }
+    console.log('Sign out successful');
     showSuccessToast('Signed out successfully');
   } catch (error) {
     console.error('Sign out error:', error);
