@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { FormulaStatus } from "@/types/auth";
 import { uploadFormulaFile, getFormulaFileUrl } from "@/utils/storageUtils";
@@ -23,7 +22,8 @@ export const createFormula = async (customerId: string, filePath: string, origin
 };
 
 export const markFormulaPaid = async (formulaId: string) => {
-  return updateFormulaStatus(formulaId, "paid");
+  // When a formula is paid, set it to in_review_draft status to indicate it's ready for admin review
+  return updateFormulaStatus(formulaId, "in_review_draft");
 };
 
 export const getCustomerFormulas = async (customerId: string) => {

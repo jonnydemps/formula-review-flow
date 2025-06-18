@@ -20,6 +20,8 @@ export type Database = {
           parsed_data: Json | null
           quote_amount: number | null
           quote_requested_at: string | null
+          review_completed_at: string | null
+          sent_to_client_at: string | null
           status: Database["public"]["Enums"]["formula_status"] | null
           updated_at: string | null
         }
@@ -33,6 +35,8 @@ export type Database = {
           parsed_data?: Json | null
           quote_amount?: number | null
           quote_requested_at?: string | null
+          review_completed_at?: string | null
+          sent_to_client_at?: string | null
           status?: Database["public"]["Enums"]["formula_status"] | null
           updated_at?: string | null
         }
@@ -46,6 +50,8 @@ export type Database = {
           parsed_data?: Json | null
           quote_amount?: number | null
           quote_requested_at?: string | null
+          review_completed_at?: string | null
+          sent_to_client_at?: string | null
           status?: Database["public"]["Enums"]["formula_status"] | null
           updated_at?: string | null
         }
@@ -148,29 +154,38 @@ export type Database = {
       }
       reviews: {
         Row: {
+          completed_at: string | null
           created_at: string | null
           formula_id: string | null
           id: string
+          is_draft: boolean | null
           report_url: string | null
           review_data: Json | null
+          sent_to_client_at: string | null
           specialist_id: string | null
           updated_at: string | null
         }
         Insert: {
+          completed_at?: string | null
           created_at?: string | null
           formula_id?: string | null
           id?: string
+          is_draft?: boolean | null
           report_url?: string | null
           review_data?: Json | null
+          sent_to_client_at?: string | null
           specialist_id?: string | null
           updated_at?: string | null
         }
         Update: {
+          completed_at?: string | null
           created_at?: string | null
           formula_id?: string | null
           id?: string
+          is_draft?: boolean | null
           report_url?: string | null
           review_data?: Json | null
+          sent_to_client_at?: string | null
           specialist_id?: string | null
           updated_at?: string | null
         }
@@ -209,6 +224,9 @@ export type Database = {
         | "paid"
         | "completed"
         | "quote_requested"
+        | "in_review_draft"
+        | "review_completed"
+        | "sent_to_client"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -330,6 +348,9 @@ export const Constants = {
         "paid",
         "completed",
         "quote_requested",
+        "in_review_draft",
+        "review_completed",
+        "sent_to_client",
       ],
     },
   },
