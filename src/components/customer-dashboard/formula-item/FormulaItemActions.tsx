@@ -113,11 +113,11 @@ const FormulaItemActions: React.FC<FormulaItemActionsProps> = ({
         </Button>
       )}
       
-      {(status === 'paid' || status === 'in_review_draft' || status === 'review_completed') && (
-        <span className="text-sm text-blue-600 font-medium">Review in progress</span>
+      {status === 'paid' && (
+        <span className="text-sm text-green-500 font-medium">Paid - Review in progress</span>
       )}
       
-      {status === 'sent_to_client' && (
+      {status === 'completed' && (
         <Button 
           size="sm" 
           onClick={handleDownloadReport}

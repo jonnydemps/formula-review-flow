@@ -13,9 +13,6 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {
       case 'quote_requested': return 'Quote Requested';
       case 'quote_provided': return 'Quote Ready';
       case 'paid': return 'Paid';
-      case 'in_review_draft': return 'In Review (Draft)';
-      case 'review_completed': return 'Review Completed';
-      case 'sent_to_client': return 'Sent to Client';
       case 'completed': return 'Completed';
       default: return 'Unknown';
     }
@@ -27,9 +24,6 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {
       case 'quote_requested': return 'bg-blue-100 text-blue-800';
       case 'quote_provided': return 'bg-purple-100 text-purple-800';
       case 'paid': return 'bg-green-100 text-green-800';
-      case 'in_review_draft': return 'bg-yellow-100 text-yellow-800';
-      case 'review_completed': return 'bg-green-200 text-green-900';
-      case 'sent_to_client': return 'bg-blue-200 text-blue-900';
       case 'completed': return 'bg-amber-100 text-amber-800';
       default: return 'bg-gray-100 text-gray-800';
     }

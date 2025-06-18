@@ -22,27 +22,10 @@ const FormulaItemInfo: React.FC<FormulaItemInfoProps> = ({
       case 'quote_requested': return 'quote_requested';
       case 'quote_provided': return 'quote_provided';
       case 'paid': return 'paid';
-      case 'in_review_draft': return 'paid'; // Show as 'paid' to customer
-      case 'review_completed': return 'paid'; // Show as 'paid' to customer
-      case 'sent_to_client': return 'completed'; // Show as 'completed' when sent to client
       case 'completed': return 'completed';
       default: return 'pending_review';
     }
   };
-
-  const getCustomerStatusLabel = (status: string): string => {
-    switch(status) {
-      case 'in_review_draft':
-      case 'review_completed':
-        return 'Review in Progress';
-      case 'sent_to_client':
-        return 'Review Complete';
-      default:
-        return '';
-    }
-  };
-
-  const customLabel = getCustomerStatusLabel(status);
 
   return (
     <div className="flex-1">
@@ -54,9 +37,6 @@ const FormulaItemInfo: React.FC<FormulaItemInfoProps> = ({
         Submitted: {new Date(createdAt).toLocaleDateString()}
         {quoteAmount !== null && (
           <span className="ml-2 font-medium text-ra-blue">${quoteAmount}</span>
-        )}
-        {customLabel && (
-          <span className="ml-2 text-blue-600 font-medium">{customLabel}</span>
         )}
       </div>
     </div>
