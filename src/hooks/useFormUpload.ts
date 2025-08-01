@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { uploadFormulaFile, createFormula } from '@/services/formulaService';
 import { handleUploadError } from '@/utils/errorUtils';
 import { showSuccessToast, showErrorToast } from '@/utils/toastUtils';
+import { validateFile } from '@/utils/validationUtils';
 
 interface UploadProgress {
   isUploading: boolean;
@@ -20,6 +21,9 @@ export const useFormUpload = (customerId?: string) => {
   const uploadMutation = useMutation({
     mutationFn: async (file: File) => {
       if (!customerId) throw new Error('Customer ID is required');
+      
+      // Validate file before upload
+      validateFile(file);
       
       setUploadProgress({ isUploading: true, progress: 0 });
       

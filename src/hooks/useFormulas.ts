@@ -1,41 +1,42 @@
 
-import { useState, useEffect } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { getCustomerFormulas, getAllFormulas, deleteFormula } from '@/services/formulaService';
 import { showSuccessToast, showErrorToast } from '@/utils/toastUtils';
+import { useOptimizedFormulasQuery } from './useOptimizedQuery';
+import { useMutation } from '@tanstack/react-query';
+import { Formula } from '@/types/formula';
 
 export const useCustomerFormulas = (customerId?: string) => {
-  return useQuery({
-    queryKey: ['formulas', 'customer', customerId],
-    queryFn: () => customerId ? getCustomerFormulas(customerId) : Promise.resolve([]),
-    enabled: !!customerId,
-    refetchOnWindowFocus: false,
-    retry: (failureCount, error) => {
-      // Retry up to 3 times for network errors
-      if (failureCount < 3) {
-        const message = error instanceof Error ? error.message : 'Unknown error';
-        return message.toLowerCase().includes('network') || message.toLowerCase().includes('fetch');
-      }
-      return false;
-    },
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
-  });
+  return useOptimizedFormulasQuery<Formula[]>(
+    ['formulas', 'customer', customerId],
+    () => customerId ? getCustomerFormulas(customerId) : Promise.resolve([]),
+    {
+      enabled: !!customerId,
+      retry: (failureCount, error) => {
+        if (failureCount < 3) {
+          const message = error instanceof Error ? error.message : 'Unknown error';
+          return message.toLowerCase().includes('network') || message.toLowerCase().includes('fetch');
+        }
+        return false;
+      },
+    }
+  );
 };
 
 export const useAllFormulas = () => {
-  return useQuery({
-    queryKey: ['formulas', 'all'],
-    queryFn: getAllFormulas,
-    refetchOnWindowFocus: false,
-    retry: (failureCount, error) => {
-      if (failureCount < 3) {
-        const message = error instanceof Error ? error.message : 'Unknown error';
-        return message.toLowerCase().includes('network') || message.toLowerCase().includes('fetch');
-      }
-      return false;
-    },
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
-  });
+  return useOptimizedFormulasQuery<Formula[]>(
+    ['formulas', 'all'],
+    getAllFormulas,
+    {
+      retry: (failureCount, error) => {
+        if (failureCount < 3) {
+          const message = error instanceof Error ? error.message : 'Unknown error';
+          return message.toLowerCase().includes('network') || message.toLowerCase().includes('fetch');
+        }
+        return false;
+      },
+    }
+  );
 };
 
 export const useDeleteFormula = () => {
