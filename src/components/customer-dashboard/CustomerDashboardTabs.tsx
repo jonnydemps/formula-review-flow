@@ -1,10 +1,13 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { BarChart3 } from 'lucide-react';
+import { BarChart3, Search, SlidersHorizontal } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import FormulaList from './FormulaList';
 import DashboardAnalytics from './DashboardAnalytics';
+import SearchAndFilter from '@/components/common/SearchAndFilter';
+import { useFormulaFilters } from '@/hooks/useFormulaFilters';
 
 import { Formula } from '@/types/formula';
 
@@ -19,6 +22,20 @@ const CustomerDashboardTabs: React.FC<CustomerDashboardTabsProps> = ({
   formulasLoading,
   onAcceptQuote
 }) => {
+  const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
+
+  const {
+    filteredFormulas,
+    searchQuery,
+    setSearchQuery,
+    statusFilter,
+    setStatusFilter,
+    sortBy,
+    setSortBy,
+    sortOrder,
+    setSortOrder,
+    resultCount,
+  } = useFormulaFilters(formulas);
   return (
     <Tabs defaultValue="formulas" className="mt-6">
       <TabsList className="grid w-full grid-cols-2">
@@ -32,14 +49,42 @@ const CustomerDashboardTabs: React.FC<CustomerDashboardTabsProps> = ({
       <TabsContent value="formulas">
         <Card>
           <CardHeader>
-            <CardTitle>Your Formulas</CardTitle>
-            <CardDescription>
-              Track the status of your formula reviews
-            </CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Your Formulas</CardTitle>
+                <CardDescription>
+                  Track the status of your formula reviews
+                </CardDescription>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowAdvancedSearch(!showAdvancedSearch)}
+                className="gap-2"
+              >
+                <SlidersHorizontal className="h-4 w-4" />
+                {showAdvancedSearch ? 'Hide' : 'Show'} Filters
+              </Button>
+            </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
+            {showAdvancedSearch && (
+              <SearchAndFilter
+                searchQuery={searchQuery}
+                onSearchChange={setSearchQuery}
+                statusFilter={statusFilter}
+                onStatusFilterChange={setStatusFilter}
+                sortBy={sortBy}
+                onSortChange={setSortBy}
+                sortOrder={sortOrder}
+                onSortOrderChange={setSortOrder}
+                resultCount={resultCount}
+                showAdvanced={showAdvancedSearch}
+                onToggleAdvanced={() => setShowAdvancedSearch(!showAdvancedSearch)}
+              />
+            )}
             <FormulaList 
-              formulas={formulas}
+              formulas={filteredFormulas}
               isLoading={formulasLoading}
               onAcceptQuote={onAcceptQuote}
             />

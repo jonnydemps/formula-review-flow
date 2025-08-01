@@ -7,15 +7,32 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
 import FormulaTable from './formulas/FormulaTable';
 import FormulaHeader from './formulas/FormulaHeader';
+import SearchAndFilter from '@/components/common/SearchAndFilter';
+import { useFormulaFilters } from '@/hooks/useFormulaFilters';
+import SkeletonLoader from '@/components/common/SkeletonLoader';
+import { Formula } from '@/types/formula';
 
 interface AdminFormulasSectionProps {
   onBack: () => void;
 }
 
 const AdminFormulasSection: React.FC<AdminFormulasSectionProps> = ({ onBack }) => {
-  const [formulas, setFormulas] = useState([]);
+  const [formulas, setFormulas] = useState<Formula[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const {
+    filteredFormulas,
+    searchQuery,
+    setSearchQuery,
+    statusFilter,
+    setStatusFilter,
+    sortBy,
+    setSortBy,
+    sortOrder,
+    setSortOrder,
+    resultCount,
+  } = useFormulaFilters(formulas);
 
   const fetchFormulas = async () => {
     try {
@@ -63,7 +80,7 @@ const AdminFormulasSection: React.FC<AdminFormulasSectionProps> = ({ onBack }) =
 
       if (error) throw error;
       
-      setFormulas(formulas.map(formula => 
+      setFormulas(formulas.map((formula: Formula) => 
         formula.id === id 
           ? { ...formula, quote_amount: amount, status: 'quote_provided' } 
           : formula
@@ -84,7 +101,7 @@ const AdminFormulasSection: React.FC<AdminFormulasSectionProps> = ({ onBack }) =
     <Card className="mb-8">
       <FormulaHeader onBack={onBack} onRefresh={handleRefresh} />
       <CardContent>
-        <div className="space-y-4">
+        <div className="space-y-6">
           {error && (
             <Alert variant="destructive">
               <AlertTriangle className="h-4 w-4 mr-2" />
@@ -92,17 +109,33 @@ const AdminFormulasSection: React.FC<AdminFormulasSectionProps> = ({ onBack }) =
             </Alert>
           )}
 
+          {/* Search and Filter */}
+          <SearchAndFilter
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            statusFilter={statusFilter}
+            onStatusFilterChange={setStatusFilter}
+            sortBy={sortBy}
+            onSortChange={setSortBy}
+            sortOrder={sortOrder}
+            onSortOrderChange={setSortOrder}
+            resultCount={resultCount}
+          />
+
           {loading ? (
-            <div className="p-8 text-center">
-              <p>Loading formulas...</p>
-            </div>
-          ) : formulas.length === 0 && !error ? (
+            <SkeletonLoader count={5} />
+          ) : filteredFormulas.length === 0 && !error ? (
             <div className="p-8 text-center border rounded-md">
-              <p>No formulas have been submitted yet.</p>
+              <p className="text-muted-foreground">
+                {searchQuery || statusFilter !== 'all' 
+                  ? 'No formulas match your search criteria.' 
+                  : 'No formulas have been submitted yet.'
+                }
+              </p>
             </div>
           ) : (
             <FormulaTable 
-              formulas={formulas} 
+              formulas={filteredFormulas} 
               onProvideQuote={provideQuote}
               onRefresh={handleRefresh}
             />
