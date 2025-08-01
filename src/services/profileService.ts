@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 const profileCache = new Map<string, {user: User, timestamp: number}>();
 const CACHE_TTL = 30 * 1000; // Reduced to 30 seconds for debugging
 
-// Main profile fetch function
+// Main profile fetch function with timeout
 export const fetchUserProfile = async (authUser: any): Promise<User> => {
   // Check cache first
   const cachedProfile = profileCache.get(authUser.id);
@@ -18,6 +18,32 @@ export const fetchUserProfile = async (authUser: any): Promise<User> => {
   }
 
   console.log("Fetching fresh profile for user:", authUser.id);
+
+  // Add timeout wrapper
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    setTimeout(() => reject(new Error('Profile fetch timeout')), 10000); // 10 second timeout
+  });
+
+  try {
+    return await Promise.race([fetchProfileWithRetry(authUser), timeoutPromise]);
+  } catch (error: any) {
+    console.error("Profile fetch failed:", error);
+    // Clear cache on error
+    profileCache.delete(authUser.id);
+    // Return a basic user object to prevent infinite loading
+    const fallbackUser = {
+      id: authUser.id,
+      email: authUser.email || "",
+      role: 'customer' as UserRole,
+      name: authUser.user_metadata?.name || authUser.email?.split("@")[0] || "User",
+    };
+    return fallbackUser;
+  }
+};
+
+// Separate function for the actual profile fetch with retry logic
+const fetchProfileWithRetry = async (authUser: any): Promise<User> => {
+  const now = Date.now();
 
   // Special case for admin account
   if (authUser.email === 'john-dempsey@hotmail.co.uk') {
@@ -33,54 +59,51 @@ export const fetchUserProfile = async (authUser: any): Promise<User> => {
     profileCache.set(authUser.id, {user: adminUser, timestamp: now});
     
     // Asynchronously ensure admin profile exists in database
-    ensureAdminProfileExists(authUser);
+    setTimeout(() => ensureAdminProfileExists(authUser), 0);
     
     return adminUser;
   }
 
   // For regular users, fetch from database
-  try {
-    const { data: profileData, error: profileError } = await supabase
-      .from("profiles")
-      .select("role, name")
-      .eq("id", authUser.id)
-      .maybeSingle();
+  console.log("Querying profiles table for user:", authUser.id);
+  
+  const { data: profileData, error: profileError } = await supabase
+    .from("profiles")
+    .select("role, name")
+    .eq("id", authUser.id)
+    .maybeSingle();
 
-    if (profileError) {
-      console.error("Error fetching profile:", profileError);
-      throw new Error(`Failed to fetch profile: ${profileError.message}`);
-    }
+  console.log("Profile query result:", { profileData, profileError });
 
-    // If profile exists, return user data
-    if (profileData) {
-      console.log("Profile found:", profileData);
-      const user = {
-        id: authUser.id,
-        email: authUser.email || "",
-        role: profileData.role as UserRole,
-        name: profileData.name || authUser.user_metadata?.name || authUser.email?.split("@")[0] || "User",
-      };
-      
-      // Cache the profile
-      profileCache.set(authUser.id, {user, timestamp: now});
-      
-      return user;
-    }
-
-    // If no profile exists, create one
-    console.log("No profile found, creating default profile");
-    const newUser = await createUserProfile(authUser);
-    
-    // Cache the new profile
-    profileCache.set(authUser.id, {user: newUser, timestamp: now});
-    
-    return newUser;
-
-  } catch (error: any) {
-    console.error("Profile service error:", error);
-    profileCache.delete(authUser.id); // Clear cache on error
-    throw new Error(`Profile service failed: ${error.message}`);
+  if (profileError) {
+    console.error("Error fetching profile:", profileError);
+    throw new Error(`Failed to fetch profile: ${profileError.message}`);
   }
+
+  // If profile exists, return user data
+  if (profileData) {
+    console.log("Profile found:", profileData);
+    const user = {
+      id: authUser.id,
+      email: authUser.email || "",
+      role: profileData.role as UserRole,
+      name: profileData.name || authUser.user_metadata?.name || authUser.email?.split("@")[0] || "User",
+    };
+    
+    // Cache the profile
+    profileCache.set(authUser.id, {user, timestamp: now});
+    
+    return user;
+  }
+
+  // If no profile exists, create one
+  console.log("No profile found, creating default profile");
+  const newUser = await createUserProfile(authUser);
+  
+  // Cache the new profile
+  profileCache.set(authUser.id, {user: newUser, timestamp: now});
+  
+  return newUser;
 };
 
 // Background function to ensure admin profile exists
