@@ -3,11 +3,11 @@ import React from 'react';
 import { FormulaStatus } from '@/types/auth';
 
 interface StatusBadgeProps {
-  status: FormulaStatus;
+  status: FormulaStatus | string;
 }
 
 const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {
-  const getStatusLabel = (status: FormulaStatus): string => {
+  const getStatusLabel = (status: FormulaStatus | string): string => {
     switch (status) {
       case 'pending_review': return 'Pending Review';
       case 'quote_requested': return 'Quote Requested';
@@ -18,14 +18,14 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {
     }
   };
   
-  const getStatusClass = (status: FormulaStatus): string => {
+  const getStatusClass = (status: FormulaStatus | string): string => {
     switch (status) {
-      case 'pending_review': return 'bg-gray-100 text-gray-800';
-      case 'quote_requested': return 'bg-blue-100 text-blue-800';
-      case 'quote_provided': return 'bg-purple-100 text-purple-800';
-      case 'paid': return 'bg-green-100 text-green-800';
-      case 'completed': return 'bg-amber-100 text-amber-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'pending_review': return 'bg-status-pending text-status-pending-foreground';
+      case 'quote_requested': return 'bg-status-quote text-status-quote-foreground';
+      case 'quote_provided': return 'bg-status-quote text-status-quote-foreground';
+      case 'paid': return 'bg-status-paid text-status-paid-foreground';
+      case 'completed': return 'bg-status-completed text-status-completed-foreground';
+      default: return 'bg-muted text-muted-foreground';
     }
   };
 

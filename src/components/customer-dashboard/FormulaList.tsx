@@ -1,10 +1,11 @@
 
 import { Card } from '@/components/ui/card';
 import FormulaItem from './FormulaItem';
-import { Loader2 } from 'lucide-react';
+import SkeletonLoader from '@/components/common/SkeletonLoader';
+import { Formula } from '@/types/formula';
 
 interface FormulaListProps {
-  formulas: any[];
+  formulas: Formula[];
   isLoading: boolean;
   onAcceptQuote: (id: string, amount: number) => void;
 }
@@ -15,12 +16,7 @@ const FormulaList: React.FC<FormulaListProps> = ({
   onAcceptQuote 
 }) => {
   if (isLoading) {
-    return (
-      <div className="p-8 text-center">
-        <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" />
-        <p className="text-gray-500">Loading your formulas...</p>
-      </div>
-    );
+    return <SkeletonLoader variant="list" count={3} />;
   }
 
   if (formulas.length === 0) {

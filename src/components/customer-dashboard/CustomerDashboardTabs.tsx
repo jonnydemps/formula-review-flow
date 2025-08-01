@@ -6,8 +6,10 @@ import { BarChart3 } from 'lucide-react';
 import FormulaList from './FormulaList';
 import DashboardAnalytics from './DashboardAnalytics';
 
+import { Formula } from '@/types/formula';
+
 interface CustomerDashboardTabsProps {
-  formulas: any[];
+  formulas: Formula[];
   formulasLoading: boolean;
   onAcceptQuote: (id: string, amount: number) => void;
 }

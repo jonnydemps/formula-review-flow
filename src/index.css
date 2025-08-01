@@ -16,6 +16,7 @@
 
     --primary: 199 89% 49%;
     --primary-foreground: 210 40% 98%;
+    --primary-hover: 199 89% 45%;
 
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
@@ -28,6 +29,32 @@
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
+
+    /* SimplyRA Brand Colors */
+    --ra-blue: 199 89% 49%;
+    --ra-blue-hover: 199 89% 45%;
+    --ra-green: 142 71% 45%;
+    --ra-orange: 24 95% 53%;
+    --ra-gray-light: 210 8% 78%;
+    --ra-gray-medium: 215 14% 59%;
+    --ra-gray-dark: 224 13% 14%;
+
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-hover)));
+    --gradient-hero: linear-gradient(135deg, hsl(var(--background)), hsl(var(--primary) / 0.1));
+    --gradient-cta: linear-gradient(135deg, hsl(var(--ra-blue)), hsl(var(--ra-blue-hover)));
+
+    /* Status Colors */
+    --status-pending: 48 96% 89%;
+    --status-pending-foreground: 25 95% 53%;
+    --status-quote: 213 94% 68%;
+    --status-quote-foreground: 213 94% 20%;
+    --status-paid: 142 71% 45%;
+    --status-paid-foreground: 142 84% 10%;
+    --status-completed: 142 71% 45%;
+    --status-completed-foreground: 142 84% 10%;
+    --status-rejected: 0 84% 60%;
+    --status-rejected-foreground: 0 84% 20%;
 
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
@@ -68,34 +95,38 @@
   @apply container max-w-[1400px] py-6 px-4 md:px-6;
 }
 
-/* Status badges */
+/* Status badges - using semantic tokens */
 .status-badge {
   @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-sm font-medium;
 }
 
 .status-pending {
-  @apply bg-yellow-100 text-yellow-800;
+  @apply bg-status-pending text-status-pending-foreground;
 }
 
 .status-quote {
-  @apply bg-blue-100 text-blue-800;
+  @apply bg-status-quote text-status-quote-foreground;
 }
 
 .status-paid {
-  @apply bg-green-100 text-green-800;
+  @apply bg-status-paid text-status-paid-foreground;
+}
+
+.status-completed {
+  @apply bg-status-completed text-status-completed-foreground;
 }
 
 .status-rejected {
-  @apply bg-red-100 text-red-800;
+  @apply bg-status-rejected text-status-rejected-foreground;
 }
 
-/* File upload styles */
+/* File upload styles - using semantic tokens */
 .file-upload-area {
-  @apply border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-ra-blue transition-colors;
+  @apply border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-ra-blue transition-colors;
 }
 
 .file-upload-area.active {
-  @apply border-ra-blue bg-blue-50;
+  @apply border-ra-blue bg-primary/5;
 }
 
 /* Layout animations */

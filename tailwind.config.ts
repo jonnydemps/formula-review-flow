@@ -53,16 +53,30 @@ export default {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))'
 				},
-				// SimplyRA custom colors
+				// SimplyRA semantic colors - using CSS variables for theming
 				ra: {
-					blue: '#0EA5E9',
-					green: '#22C55E',
-					orange: '#F97316',
+					blue: 'hsl(var(--ra-blue))',
+					'blue-hover': 'hsl(var(--ra-blue-hover))',
+					green: 'hsl(var(--ra-green))',
+					orange: 'hsl(var(--ra-orange))',
 					gray: {
-						light: '#C8C8C9',
-						medium: '#8E9196',
-						dark: '#221F26'
+						light: 'hsl(var(--ra-gray-light))',
+						medium: 'hsl(var(--ra-gray-medium))',
+						dark: 'hsl(var(--ra-gray-dark))'
 					}
+				},
+				// Status-specific colors
+				status: {
+					pending: 'hsl(var(--status-pending))',
+					'pending-foreground': 'hsl(var(--status-pending-foreground))',
+					quote: 'hsl(var(--status-quote))',
+					'quote-foreground': 'hsl(var(--status-quote-foreground))',
+					paid: 'hsl(var(--status-paid))',
+					'paid-foreground': 'hsl(var(--status-paid-foreground))',
+					completed: 'hsl(var(--status-completed))',
+					'completed-foreground': 'hsl(var(--status-completed-foreground))',
+					rejected: 'hsl(var(--status-rejected))',
+					'rejected-foreground': 'hsl(var(--status-rejected-foreground))'
 				}
 			},
 			borderRadius: {

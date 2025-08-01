@@ -18,14 +18,14 @@ const Home: React.FC = () => {
         {/* Hero Section */}
         <section className="bg-gradient-to-br from-white to-blue-50 py-16 px-4">
           <div className="max-w-6xl mx-auto text-center">
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 bg-gradient-to-r from-ra-blue to-blue-600 bg-clip-text text-transparent">
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 bg-gradient-to-r from-ra-blue to-ra-blue-hover bg-clip-text text-transparent">
               Regulatory Affairs Made Simple
             </h1>
             <p className="text-xl text-gray-700 mb-8 max-w-3xl mx-auto">
               Upload your formulations, get expert review, and receive compliant documentation for your products quickly and efficiently.
             </p>
             {user ? (
-              <Button size="lg" asChild className="bg-ra-blue hover:bg-blue-700 rounded-full px-8 py-6">
+              <Button size="lg" asChild className="bg-ra-blue hover:bg-ra-blue-hover rounded-full px-8 py-6">
                 <Link to={user.role === 'admin' ? '/admin-dashboard' : '/customer-dashboard'}>
                   Go to Dashboard
                   <ArrowRight className="ml-2 h-5 w-5" />
@@ -33,7 +33,7 @@ const Home: React.FC = () => {
               </Button>
             ) : (
               <div className="flex flex-wrap gap-4 justify-center">
-                <Button size="lg" asChild className="bg-ra-blue hover:bg-blue-700 rounded-full px-8">
+                <Button size="lg" asChild className="bg-ra-blue hover:bg-ra-blue-hover rounded-full px-8">
                   <Link to="/sign-up">
                     Get Started
                     <ArrowRight className="ml-2 h-5 w-5" />
@@ -98,7 +98,7 @@ const Home: React.FC = () => {
         </section>
         
         {/* CTA Section */}
-        <section className="py-16 px-4 bg-gradient-to-r from-ra-blue to-blue-600">
+        <section className="py-16 px-4 bg-gradient-to-r from-ra-blue to-ra-blue-hover">
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-3xl font-bold text-white mb-6">
               Ready to simplify your regulatory compliance?

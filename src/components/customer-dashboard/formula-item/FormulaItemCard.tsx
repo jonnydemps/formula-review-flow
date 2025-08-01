@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import FormulaDetailsDialog from '@/components/formula-details/FormulaDetailsDialog';
 import FormulaItemInfo from './FormulaItemInfo';
 import FormulaItemActions from './FormulaItemActions';
+import { Formula } from '@/types/formula';
 
 interface FormulaItemCardProps {
   id: string;
@@ -25,7 +26,7 @@ const FormulaItemCard: React.FC<FormulaItemCardProps> = ({
   onAcceptQuote
 }) => {
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
-  const [formulaDetails, setFormulaDetails] = useState<any | null>(null);
+  const [formulaDetails, setFormulaDetails] = useState<Formula | null>(null);
 
   const handleViewDetails = async () => {
     try {

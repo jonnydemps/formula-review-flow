@@ -4,18 +4,19 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@
 import FormulaActions from './FormulaActions';
 import StatusBadge from '@/components/StatusBadge';
 import EnhancedFormulaReviewDialog from './EnhancedFormulaReviewDialog';
+import { Formula } from '@/types/formula';
 
 interface FormulaTableProps {
-  formulas: any[];
+  formulas: Formula[];
   onProvideQuote: (id: string, amount: number) => void;
   onRefresh?: () => void;
 }
 
 const FormulaTable: React.FC<FormulaTableProps> = ({ formulas, onProvideQuote, onRefresh }) => {
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
-  const [selectedFormula, setSelectedFormula] = useState<any>(null);
+  const [selectedFormula, setSelectedFormula] = useState<Formula | null>(null);
 
-  const handleReview = (formula: any) => {
+  const handleReview = (formula: Formula) => {
     console.log('Opening enhanced review dialog for formula:', formula.id);
     setSelectedFormula(formula);
     setReviewDialogOpen(true);
