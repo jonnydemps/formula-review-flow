@@ -14,35 +14,55 @@ const Home: React.FC = () => {
     <div className="flex flex-col min-h-screen">
       <Header />
       
-      <main className="flex-grow">
+      <main className="flex-grow" id="main-content" role="main">
         {/* Hero Section */}
-        <section className="bg-gradient-to-br from-white to-blue-50 py-16 px-4">
+        <section 
+          className="bg-gradient-to-br from-background to-muted py-12 md:py-16 lg:py-20 px-4"
+          aria-labelledby="hero-heading"
+        >
           <div className="max-w-6xl mx-auto text-center">
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 bg-gradient-to-r from-ra-blue to-ra-blue-hover bg-clip-text text-transparent">
+            <h1 
+              id="hero-heading"
+              className="text-3xl md:text-5xl lg:text-6xl font-bold mb-4 md:mb-6 bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent"
+            >
               Regulatory Affairs Made Simple
             </h1>
-            <p className="text-xl text-gray-700 mb-8 max-w-3xl mx-auto">
+            <p className="text-lg md:text-xl text-muted-foreground mb-6 md:mb-8 max-w-3xl mx-auto leading-relaxed">
               Upload your formulations, get expert review, and receive compliant documentation for your products quickly and efficiently.
             </p>
             {user ? (
-              <Button size="lg" asChild className="bg-ra-blue hover:bg-ra-blue-hover rounded-full px-8 py-6">
-                <Link to={user.role === 'admin' ? '/admin-dashboard' : '/customer-dashboard'}>
+              <Button 
+                size="lg" 
+                asChild 
+                className="rounded-full px-6 md:px-8 py-3 md:py-6 text-base md:text-lg"
+              >
+                <Link 
+                  to={user.role === 'admin' ? '/admin-dashboard' : '/customer-dashboard'}
+                  className="inline-flex items-center gap-2"
+                >
                   Go to Dashboard
-                  <ArrowRight className="ml-2 h-5 w-5" />
+                  <ArrowRight className="h-4 w-4 md:h-5 md:w-5" />
                 </Link>
               </Button>
             ) : (
-              <div className="flex flex-wrap gap-4 justify-center">
-                <Button size="lg" asChild className="bg-ra-blue hover:bg-ra-blue-hover rounded-full px-8">
-                  <Link to="/sign-up">
+              <div className="flex flex-col sm:flex-row gap-3 md:gap-4 justify-center">
+                <Button 
+                  size="lg" 
+                  asChild 
+                  className="rounded-full px-6 md:px-8 py-3 md:py-6 text-base md:text-lg"
+                >
+                  <Link to="/sign-up" className="inline-flex items-center gap-2">
                     Get Started
-                    <ArrowRight className="ml-2 h-5 w-5" />
+                    <ArrowRight className="h-4 w-4 md:h-5 md:w-5" />
                   </Link>
                 </Button>
-                <Button size="lg" variant="outline" asChild className="rounded-full px-8 border-blue-200 hover:bg-blue-50">
-                  <Link to="/sign-in">
-                    Sign In
-                  </Link>
+                <Button 
+                  size="lg" 
+                  variant="outline" 
+                  asChild 
+                  className="rounded-full px-6 md:px-8 py-3 md:py-6 text-base md:text-lg"
+                >
+                  <Link to="/sign-in">Sign In</Link>
                 </Button>
               </div>
             )}

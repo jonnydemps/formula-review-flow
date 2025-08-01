@@ -33,17 +33,19 @@ const FormulaTable: React.FC<FormulaTableProps> = ({ formulas, onProvideQuote, o
 
   return (
     <>
-      <div className="overflow-x-auto">
-        <Table>
+      <div className="overflow-x-auto rounded-lg border bg-card">
+        <Table role="table" aria-label="Formula management table">
           <TableHeader>
             <TableRow>
-              <TableHead>Formula</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Customer Name</TableHead>
-              <TableHead>Customer Email</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead className="text-right">Quote</TableHead>
-              <TableHead>Actions</TableHead>
+              <TableHead scope="col">Formula</TableHead>
+              <TableHead scope="col">Status</TableHead>
+              <TableHead scope="col">Customer Name</TableHead>
+              <TableHead scope="col">Customer Email</TableHead>
+              <TableHead scope="col">Date</TableHead>
+              <TableHead scope="col" className="text-right">Quote</TableHead>
+              <TableHead scope="col">
+                <span className="sr-only">Actions</span>
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

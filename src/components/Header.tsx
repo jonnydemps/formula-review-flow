@@ -34,19 +34,32 @@ const Header: React.FC = () => {
   console.log("Header rendering, user:", user?.email, "role:", user?.role);
 
   return (
-    <header className={`sticky top-0 z-50 transition-all duration-300 ${isScrolled ? 'bg-white shadow-md' : 'bg-white/90 backdrop-blur-md shadow-sm'}`}>
-      <div className="ra-container flex justify-between items-center py-4">
+    <header 
+      className={`sticky top-0 z-50 transition-all duration-300 ${isScrolled ? 'bg-background shadow-md' : 'bg-background/90 backdrop-blur-md shadow-sm'}`}
+      role="banner"
+    >
+      <div className="container flex justify-between items-center py-3 md:py-4">
         <div className="flex items-center">
-          <Link to="/" className="flex items-center gap-3 text-ra-blue font-medium text-4xl group">
-            <TestTube className="h-20 w-20 transform group-hover:rotate-12 transition-transform duration-300" />
-            <span className="bg-gradient-to-r from-ra-blue to-blue-600 bg-clip-text text-transparent">SimplyRA</span>
+          <Link 
+            to="/" 
+            className="flex items-center gap-2 md:gap-3 text-primary font-medium text-2xl md:text-4xl group focus:outline-none focus:ring-2 focus:ring-primary/50 rounded-md"
+            aria-label="SimplyRA - Home"
+          >
+            <TestTube className="h-12 w-12 md:h-20 md:w-20 transform group-hover:rotate-12 transition-transform duration-300" />
+            <span className="bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+              SimplyRA
+            </span>
           </Link>
         </div>
         
         {isLoading ? (
-          <div className="flex items-center gap-2 text-gray-500">
+          <div 
+            className="flex items-center gap-2 text-muted-foreground"
+            role="status"
+            aria-label="Loading user information"
+          >
             <Loader2 className="h-4 w-4 animate-spin" />
-            <span className="text-sm">Loading...</span>
+            <span className="text-sm hidden sm:block">Loading...</span>
           </div>
         ) : (
           <DesktopNavigation 
@@ -58,12 +71,18 @@ const Header: React.FC = () => {
         
         {/* Mobile Menu Button */}
         <button 
-          className="md:hidden p-2 focus:outline-none rounded-md hover:bg-gray-100 transition-colors" 
+          className="md:hidden p-2 focus:outline-none focus:ring-2 focus:ring-primary/50 rounded-md hover:bg-muted transition-colors" 
           onClick={toggleMenu}
-          aria-label={isMenuOpen ? "Close menu" : "Open menu"}
+          aria-label={isMenuOpen ? "Close navigation menu" : "Open navigation menu"}
+          aria-expanded={isMenuOpen}
+          aria-controls="mobile-menu"
           disabled={isLoading}
         >
-          {isMenuOpen ? <X className="text-gray-700" /> : <Menu className="text-gray-700" />}
+          {isMenuOpen ? (
+            <X className="h-5 w-5 text-foreground" />
+          ) : (
+            <Menu className="h-5 w-5 text-foreground" />
+          )}
         </button>
       </div>
       

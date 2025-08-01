@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import ErrorBoundary from "./components/ErrorBoundary";
+import { SkipToMainContent } from "@/components/accessibility/AccessibilityProvider";
 import Home from "./pages/Home";
 import AboutUs from "./pages/AboutUs";
 import SignIn from "./pages/SignIn";
@@ -39,6 +40,7 @@ const queryClient = new QueryClient({
 
 const App = () => (
   <ErrorBoundary>
+    <SkipToMainContent />
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <AuthProvider>
